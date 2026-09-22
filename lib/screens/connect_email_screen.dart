@@ -151,18 +151,39 @@ class _ConnectEmailScreenState extends ConsumerState<ConnectEmailScreen> {
                     const Text('Connect the email account you want to send from.'),
                     const SizedBox(height: 24),
                     FilledButton(
-                      onPressed: () => _connect('google'),
-                      child: const Text('Connect with Google'),
-                    ),
-                    const SizedBox(height: 8),
-                    FilledButton(
-                      onPressed: () => _connect('microsoft'),
-                      child: const Text('Connect with Microsoft'),
+                      onPressed: () => _pickProviderAndConnect(context),
+                      child: const Text('Connect email'),
                     ),
                   ],
                 ),
               ),
       ),
     );
+  }
+
+  Future<void> _pickProviderAndConnect(BuildContext context) async {
+    final provider = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.mail_outline),
+              title: const Text('Google'),
+              onTap: () => Navigator.of(sheetContext).pop('google'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.mail_outline),
+              title: const Text('Microsoft'),
+              onTap: () => Navigator.of(sheetContext).pop('microsoft'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (provider == null || !mounted) return; // sheet dismissed without a choice
+    await _connect(provider);
   }
 }

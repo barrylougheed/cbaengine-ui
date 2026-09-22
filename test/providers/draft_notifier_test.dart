@@ -89,6 +89,15 @@ void main() {
     expect(notifier.state.isReadyToReview, isFalse);
   });
 
+  test('selectTestRecipient sets a debug LEA with id manual-test-recipient', () {
+    final notifier = DraftNotifier();
+
+    notifier.selectTestRecipient();
+
+    expect(notifier.state.lea?.id, 'manual-test-recipient');
+    expect(notifier.state.lea?.councillors, isNotEmpty);
+  });
+
   test('clear resets to an empty draft', () {
     final notifier = DraftNotifier();
     notifier.selectCouncil(council);

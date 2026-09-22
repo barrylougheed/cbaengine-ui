@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,26 +18,49 @@ class CouncilPickerScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Select your council')),
-      body: councilsAsync.when(
-        loading: () => const LoadingView(),
-        error: (error, _) => ErrorBanner(
-          message: 'Could not load councils. Please check your connection and try again.',
-          onRetry: () => ref.invalidate(councilsProvider),
-        ),
-        data: (councils) => ListView.builder(
-          itemCount: councils.length,
-          itemBuilder: (context, index) {
-            final council = councils[index];
-            return ListTile(
-              title: Text(council.name),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                ref.read(draftNotifierProvider.notifier).selectCouncil(council);
-                context.go('/council/${council.id}/lea');
-              },
-            );
-          },
-        ),
+      body: Column(
+        children: [
+          Expanded(
+            child: councilsAsync.when(
+              loading: () => const LoadingView(),
+              error: (error, _) => ErrorBanner(
+                message: 'Could not load councils. Please check your connection and try again.',
+                onRetry: () => ref.invalidate(councilsProvider),
+              ),
+              data: (councils) => ListView.builder(
+                itemCount: councils.length,
+                itemBuilder: (context, index) {
+                  final council = councils[index];
+                  return ListTile(
+                    title: Text(council.name),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      ref.read(draftNotifierProvider.notifier).selectCouncil(council);
+                      context.go('/council/${council.id}/lea');
+                    },
+                  );
+                },
+              ),
+            ),
+          ),
+          // Debug-only side door for exercising a real send end-to-end
+          // through the UI without a real councillor — see
+          // DraftNotifier.selectTestRecipient's doc comment. Never
+          // appears in a release build.
+          if (kDebugMode)
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: TextButton(
+                  onPressed: () {
+                    ref.read(draftNotifierProvider.notifier).selectTestRecipient();
+                    context.go('/compose');
+                  },
+                  child: const Text('Use test recipient (dev)'),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

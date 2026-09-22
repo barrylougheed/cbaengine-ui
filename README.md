@@ -25,9 +25,34 @@ Council picker → LEA picker → Compose → Review → Connect email (OAuth)
   auth/message-flow notifiers are all unit-tested** (`flutter test` — 54 tests as of this writing).
 - Router guards prevent skipping steps via a raw URL (e.g. visiting `/review` with no draft bounces back
   to `/compose` → `/council`), and any `401` from the backend routes to `/reconnect` from anywhere.
-- **Not yet done:** session persistence across app restarts (Q3 from the design — the auth token
-  currently only lives in memory for one session), and real on-device testing on Android/iOS (see
-  "Prerequisites").
+- **Not yet done:** real on-device testing on Android/iOS (see "Prerequisites").
+
+## Decided against: session persistence across app restarts
+
+Raised during the original design (as "should closing and reopening the app require reconnecting?") and
+deliberately decided against, not deferred for lack of time. The payoff is small enough that it isn't
+worth the added surface (secure storage wiring, boot-sequence restoration, another set of failure modes
+to test):
+
+- **Google/Microsoft OAuth access tokens expire in about an hour**, regardless of anything this app does.
+  Persisting the token only helps within that same hour — reopen the app later than that and the restored
+  token is dead on arrival, forcing a reconnect anyway. Persistence can't extend the useful window past
+  what the provider already imposes.
+- **The whole flow — pick council/LEA, compose, review, connect, send — takes a few minutes in one
+  sitting.** With 99.9% backend availability, there's no legitimate "come back later mid-flow" case; the
+  only scenario persistence helps is an *accidental* interruption (app killed, a call comes in) within
+  that same short, already-narrow hour-long window.
+- **The 1-send/day limit removes any reason to preserve continuity across a longer gap** — there's no
+  "continue where I left off tomorrow," since tomorrow starts fresh regardless of what happened today.
+- **Reconnecting is low-friction when it's needed** — the device/browser is almost always already logged
+  into Google or Microsoft, so OAuth consent is typically one tap, not a real re-authentication burden.
+
+So the actual value on offer is: save one OAuth tap, for someone accidentally interrupted, within a
+one-hour window, occasionally. Worth revisiting for v2 if usage patterns turn out to disagree with this
+(e.g. real users reporting the reconnect prompt as annoying) — `TokenStorageService` already exists and
+is fully tested, so building the wiring later is cheap if it turns out to be warranted. What genuinely
+*does* need to persist — the in-progress draft, surviving the OAuth redirect's page reload on web — is a
+hard technical requirement (not a nice-to-have) and is already built (`DraftStorageService`).
 
 ## Known gap: only Google and Microsoft can connect
 
@@ -104,24 +129,23 @@ flutter run -d web-server --web-port 5173
 
 then open `http://localhost:5173` yourself.
 
-## Manually testing a real send
+## Manually testing a real send, through the UI
 
 Same safety consideration as the backend: `BLOCK_REAL_COUNCILLOR_SENDS` is on by default, so a real
 council/LEA will come back from `/connect` with a "failed" result explaining the block — expected, not a
-bug. To see an actual "sent" result, seed the backend's manual-test fixture first:
+bug. To see an actual "sent" result through the app itself, seed the backend's manual-test fixture first:
 
 ```bash
 # In the CBA repo
 python scripts/seed_manual_test_lea.py
 ```
 
-Then in the app, pick any council/LEA as normal for browsing — but note the manual-test fixture itself
-(`manual-test-recipient`) isn't shown in the public picker (deliberately, same as the backend's own
-`/leas` endpoint). Testing a real send currently means using the picker for a real council/LEA to see the
-review flow, then using `scripts/send_real_test_email.py` or the backend's own documented curl flow (see
-[CBA/README.md](../CBA/README.md#manually-testing-a-real-send)) for the actual delivery-confirmed test —
-wiring the picker itself to the manual-test fixture isn't in scope for this app (it's excluded from every
-public listing on purpose).
+The fixture (`manual-test-recipient`) is deliberately excluded from `GET /leas` and
+`GET /councils/{id}/leas` (same as the backend's own listings), so the normal picker can never reach it —
+but `POST /messages` accepts it directly, so the rest of the flow works identically to a real send. A
+debug-only button on the Council picker screen, **"Use test recipient (dev)"**, skips straight to Compose
+with this fixture selected — visible only in debug builds (`kDebugMode`), never in a release build. Use
+it to exercise a real, delivery-confirmed send (and the 429/failure paths) entirely through the app.
 
 ## Tests
 

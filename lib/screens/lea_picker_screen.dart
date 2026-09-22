@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../api/api_exceptions.dart';
 import '../providers/draft/draft_notifier.dart';
 import '../providers/reference_data/reference_data_providers.dart';
 import '../widgets/error_banner.dart';
@@ -25,10 +26,17 @@ class LeaPickerScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Select your area')),
       body: leasAsync.when(
         loading: () => const LoadingView(),
-        error: (error, _) => ErrorBanner(
-          message: 'Could not load areas for this council. Please check your connection and try again.',
-          onRetry: () => ref.invalidate(leasForCouncilProvider(councilId)),
-        ),
+        error: (error, _) => error is NotFoundException
+            // Only reachable via a malformed deep link (a councilId that
+            // doesn't resolve to any council) — the backend's own wording
+            // ("Council not found.") is already correct and specific, so
+            // render it verbatim rather than the generic fallback below.
+            // No retry: a nonexistent council id won't start resolving.
+            ? ErrorBanner(message: error.message)
+            : ErrorBanner(
+                message: 'Could not load areas for this council. Please check your connection and try again.',
+                onRetry: () => ref.invalidate(leasForCouncilProvider(councilId)),
+              ),
         data: (leas) => ListView.builder(
           itemCount: leas.length,
           itemBuilder: (context, index) {
