@@ -5,6 +5,11 @@ import '../models/message_status.dart';
 import '../providers/message_flow/message_flow_notifier.dart';
 import '../providers/message_flow/message_flow_state.dart';
 
+// A considered green rather than Material's stock (fairly dated-looking)
+// `Colors.green` — Material 3 has no built-in "success" color role, so
+// this is deliberately picked to sit well against the themed palette.
+const _successColor = Color(0xFF16A34A);
+
 /// Step 6, terminal: renders MessageRecord.status/.detail verbatim
 /// against the backend's exact wording — sent, failed, or partial
 /// failure. Never a toast; this is the flow's actual outcome, reached
@@ -34,17 +39,17 @@ class ResultScreen extends ConsumerWidget {
       MessageFlowResult(:final record) when record.status == MessageStatus.sent => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.check_circle_outline, color: Colors.green, size: 48),
+          const _AnimatedOutcomeIcon(icon: Icons.check_circle_outline, color: _successColor),
           const SizedBox(height: 16),
-          const Text('Your message was sent.', style: TextStyle(fontSize: 18)),
+          Text('Your message was sent.', style: Theme.of(context).textTheme.titleLarge),
         ],
       ),
       MessageFlowResult(:final record) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error, size: 48),
+          _AnimatedOutcomeIcon(icon: Icons.error_outline, color: Theme.of(context).colorScheme.error),
           const SizedBox(height: 16),
-          const Text('Your message could not be sent.', style: TextStyle(fontSize: 18)),
+          Text('Your message could not be sent.', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
           if (record.detail != null) Text(record.detail!, textAlign: TextAlign.center),
         ],
@@ -52,11 +57,34 @@ class ResultScreen extends ConsumerWidget {
       MessageFlowFailed(:final failure) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error, size: 48),
+          _AnimatedOutcomeIcon(icon: Icons.error_outline, color: Theme.of(context).colorScheme.error),
           const SizedBox(height: 16),
           Text(failure.message, textAlign: TextAlign.center),
         ],
       ),
     };
+  }
+}
+
+/// A small scale + fade entrance for the terminal outcome icon — the one
+/// place in the app that earns a bit of motion, since it's the payoff
+/// moment of the whole flow.
+class _AnimatedOutcomeIcon extends StatelessWidget {
+  const _AnimatedOutcomeIcon({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOutBack,
+      builder: (context, value, child) {
+        return Opacity(opacity: value.clamp(0, 1), child: Transform.scale(scale: value, child: child));
+      },
+      child: Icon(icon, color: color, size: 56),
+    );
   }
 }

@@ -7,6 +7,7 @@ import '../providers/draft/draft_notifier.dart';
 import '../providers/reference_data/reference_data_providers.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/loading_view.dart';
+import '../widgets/step_progress_indicator.dart';
 
 /// Step 1 of the flow: GET /councils, unauthenticated.
 class CouncilPickerScreen extends ConsumerWidget {
@@ -20,6 +21,7 @@ class CouncilPickerScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Select your council')),
       body: Column(
         children: [
+          const StepProgressIndicator(currentStep: 1, totalSteps: 5, label: 'Council'),
           Expanded(
             child: councilsAsync.when(
               loading: () => const LoadingView(),
@@ -28,16 +30,19 @@ class CouncilPickerScreen extends ConsumerWidget {
                 onRetry: () => ref.invalidate(councilsProvider),
               ),
               data: (councils) => ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 itemCount: councils.length,
                 itemBuilder: (context, index) {
                   final council = councils[index];
-                  return ListTile(
-                    title: Text(council.name),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      ref.read(draftNotifierProvider.notifier).selectCouncil(council);
-                      context.go('/council/${council.id}/lea');
-                    },
+                  return Card(
+                    child: ListTile(
+                      title: Text(council.name),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () {
+                        ref.read(draftNotifierProvider.notifier).selectCouncil(council);
+                        context.go('/council/${council.id}/lea');
+                      },
+                    ),
                   );
                 },
               ),

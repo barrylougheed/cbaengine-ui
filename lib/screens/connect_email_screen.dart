@@ -12,6 +12,7 @@ import '../providers/message_flow/message_flow_notifier.dart';
 import '../services/oauth_fragment_parser.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/loading_view.dart';
+import '../widgets/step_progress_indicator.dart';
 
 /// Step 5: triggers OAuth and hosts the post-connect auto-chain
 /// (create -> confirm -> send). Reached both from a fresh "Continue" tap
@@ -139,24 +140,34 @@ class _ConnectEmailScreenState extends ConsumerState<ConnectEmailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Connect your email')),
-      body: Center(
-        child: _busy
-            ? const LoadingView()
-            : Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_error != null) ...[ErrorBanner(message: _error!), const SizedBox(height: 16)],
-                    const Text('Connect the email account you want to send from.'),
-                    const SizedBox(height: 24),
-                    FilledButton(
-                      onPressed: () => _pickProviderAndConnect(context),
-                      child: const Text('Connect email'),
+      body: Column(
+        children: [
+          const StepProgressIndicator(currentStep: 5, totalSteps: 5, label: 'Connect & send'),
+          Expanded(
+            child: Center(
+              child: _busy
+                  ? const LoadingView()
+                  : Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_error != null) ...[
+                            ErrorBanner(message: _error!),
+                            const SizedBox(height: 16),
+                          ],
+                          const Text('Connect the email account you want to send from.'),
+                          const SizedBox(height: 24),
+                          FilledButton(
+                            onPressed: () => _pickProviderAndConnect(context),
+                            child: const Text('Connect email'),
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-              ),
+            ),
+          ),
+        ],
       ),
     );
   }

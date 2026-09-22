@@ -11,7 +11,9 @@ class CbaEngineApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
       title: 'CBAEngine',
-      theme: buildAppTheme(),
+      theme: buildAppTheme(brightness: Brightness.light),
+      darkTheme: buildAppTheme(brightness: Brightness.dark),
+      themeMode: ThemeMode.system,
       routerConfig: ref.watch(routerProvider),
     );
   }

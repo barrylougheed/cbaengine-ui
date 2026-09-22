@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/draft/draft_notifier.dart';
+import '../widgets/step_progress_indicator.dart';
 
 /// Step 4: shows the drafted message plus recipient name/party — still
 /// entirely unauthenticated (councillor data comes straight from the
@@ -18,35 +19,70 @@ class ReviewScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final draft = ref.watch(draftNotifierProvider);
     final lea = draft.lea!; // router guard guarantees this is set
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Review your message')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: Column(
         children: [
-          Text('${lea.name}, ${lea.council}', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 4),
-          Text('Topic: ${draft.topic}'),
-          const SizedBox(height: 16),
-          Text(draft.subject, style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 8),
-          Text(draft.body),
-          const SizedBox(height: 24),
-          Text(
-            'This will be sent to ${lea.councillors.length} '
-            '${lea.councillors.length == 1 ? 'councillor' : 'councillors'}:',
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-          const SizedBox(height: 8),
-          for (final councillor in lea.councillors)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.person_outline),
-              title: Text(councillor.name),
-              subtitle: Text(councillor.party),
+          const StepProgressIndicator(currentStep: 4, totalSteps: 5, label: 'Review'),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                Text(
+                  '${lea.name}, ${lea.council}',
+                  style: textTheme.labelLarge?.copyWith(color: colorScheme.primary),
+                ),
+                const SizedBox(height: 2),
+                Text('Topic: ${draft.topic}', style: textTheme.bodySmall),
+                const SizedBox(height: 12),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(draft.subject, style: textTheme.titleLarge),
+                        const SizedBox(height: 8),
+                        Text(draft.body),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'This will be sent to ${lea.councillors.length} '
+                  '${lea.councillors.length == 1 ? 'councillor' : 'councillors'}',
+                  style: textTheme.titleSmall,
+                ),
+                const SizedBox(height: 8),
+                Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    children: [
+                      for (final (index, councillor) in lea.councillors.indexed) ...[
+                        if (index > 0) const Divider(height: 1, indent: 16, endIndent: 16),
+                        ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: colorScheme.primaryContainer,
+                            foregroundColor: colorScheme.onPrimaryContainer,
+                            child: Text(councillor.name.isNotEmpty ? councillor.name[0] : '?'),
+                          ),
+                          title: Text(councillor.name),
+                          subtitle: Text(councillor.party),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                FilledButton(onPressed: () => context.go('/connect'), child: const Text('Continue')),
+                const SizedBox(height: 16),
+              ],
             ),
-          const SizedBox(height: 16),
-          FilledButton(onPressed: () => context.go('/connect'), child: const Text('Continue')),
+          ),
         ],
       ),
     );
