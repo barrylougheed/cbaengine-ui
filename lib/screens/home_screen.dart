@@ -14,6 +14,8 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(title: const AppBanner()),
       body: SafeArea(
@@ -22,13 +24,18 @@ class HomeScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text(
+                'Hold yourself accountable for holding power accountable.',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontStyle: FontStyle.italic, color: colorScheme.primary),
+              ),
+              const SizedBox(height: 24),
               Text('What would you like to do?', style: Theme.of(context).textTheme.headlineSmall),
               const SizedBox(height: 8),
               Text(
                 'Pick an option below to get started.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
               ),
               const SizedBox(height: 24),
               _FeatureCard(
@@ -45,6 +52,8 @@ class HomeScreen extends StatelessWidget {
                 badge: 'Coming soon',
                 onTap: null,
               ),
+              const Spacer(),
+              const Center(child: _SocialLinks()),
             ],
           ),
         ),
@@ -78,6 +87,33 @@ class _FeatureCard extends StatelessWidget {
             ? Chip(label: Text(badge!), visualDensity: VisualDensity.compact)
             : const Icon(Icons.chevron_right),
       ),
+    );
+  }
+}
+
+/// Not live accounts yet — icons are shown so the footer's final shape is
+/// already in place, but deliberately inert (disabled `IconButton`s, no
+/// `onTap`) rather than linking anywhere until real accounts exist.
+class _SocialLinks extends StatelessWidget {
+  const _SocialLinks();
+
+  @override
+  Widget build(BuildContext context) {
+    final mutedColor = Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Tooltip(
+          message: 'Instagram — coming soon',
+          child: IconButton(icon: Icon(Icons.camera_alt_outlined, color: mutedColor), onPressed: null),
+        ),
+        const SizedBox(width: 8),
+        Tooltip(
+          message: 'YouTube — coming soon',
+          child: IconButton(icon: Icon(Icons.smart_display_outlined, color: mutedColor), onPressed: null),
+        ),
+      ],
     );
   }
 }
