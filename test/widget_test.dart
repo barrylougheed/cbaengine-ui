@@ -12,7 +12,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 void main() {
-  testWidgets('the app boots to the council picker', (WidgetTester tester) async {
+  testWidgets('the app boots to the home screen', (WidgetTester tester) async {
     final mockHttpClient = MockClient((request) async {
       return http.Response(jsonEncode({'councils': <Object>[]}), 200);
     });
@@ -31,6 +31,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Select your council'), findsOneWidget);
+    expect(find.text('What would you like to do?'), findsOneWidget);
+    expect(find.text('Contact your councillors'), findsOneWidget);
+    expect(find.text('CBAEngine'), findsOneWidget);
   });
 }

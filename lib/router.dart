@@ -8,6 +8,7 @@ import 'providers/draft/draft_notifier.dart';
 import 'screens/compose_screen.dart';
 import 'screens/connect_email_screen.dart';
 import 'screens/council_picker_screen.dart';
+import 'screens/home_screen.dart';
 import 'screens/lea_picker_screen.dart';
 import 'screens/reconnect_screen.dart';
 import 'screens/result_screen.dart';
@@ -32,7 +33,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final authRefresh = _AuthRefreshListenable(ref);
 
   return GoRouter(
-    initialLocation: '/council',
+    initialLocation: '/',
     refreshListenable: authRefresh,
     redirect: (context, state) {
       final goingTo = state.matchedLocation;
@@ -56,6 +57,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
       GoRoute(path: '/council', builder: (context, state) => const CouncilPickerScreen()),
       GoRoute(
         path: '/council/:councilId/lea',

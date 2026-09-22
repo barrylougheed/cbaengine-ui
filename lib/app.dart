@@ -11,12 +11,11 @@ class CbaEngineApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
       title: 'CBAEngine',
-      // The default "DEBUG" ribbon sits directly over an AppBar's
-      // top-right action icon — exactly where HomeAction lives on every
-      // step screen — visually hiding and blocking taps on it. Debug
-      // builds already have their own signal (the "Use test recipient"
-      // button, kDebugMode-gated), so the banner isn't pulling its
-      // weight here.
+      // The default "DEBUG" ribbon sits in the top-right corner and was
+      // previously found covering an AppBar action icon placed there —
+      // kept off even now that AppBanner lives top-left instead, since
+      // debug builds already have their own signal (the "Use test
+      // recipient" button, kDebugMode-gated).
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(brightness: Brightness.light),
       darkTheme: buildAppTheme(brightness: Brightness.dark),

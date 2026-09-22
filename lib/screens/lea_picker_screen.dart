@@ -5,8 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../api/api_exceptions.dart';
 import '../providers/draft/draft_notifier.dart';
 import '../providers/reference_data/reference_data_providers.dart';
+import '../widgets/app_banner.dart';
 import '../widgets/error_banner.dart';
-import '../widgets/home_action.dart';
 import '../widgets/loading_view.dart';
 import '../widgets/step_progress_indicator.dart';
 
@@ -25,10 +25,10 @@ class LeaPickerScreen extends ConsumerWidget {
     final leasAsync = ref.watch(leasForCouncilProvider(councilId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Select your area'), actions: const [HomeAction()]),
+      appBar: AppBar(title: const AppBanner()),
       body: Column(
         children: [
-          const StepProgressIndicator(currentStep: 2, totalSteps: 5, label: 'Local Electoral Area'),
+          const StepProgressIndicator(currentStep: 2, totalSteps: 5, label: 'Select your area'),
           Expanded(
             child: leasAsync.when(
               loading: () => const LoadingView(),
@@ -46,7 +46,7 @@ class LeaPickerScreen extends ConsumerWidget {
                       onRetry: () => ref.invalidate(leasForCouncilProvider(councilId)),
                     ),
               data: (leas) => ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 itemCount: leas.length,
                 itemBuilder: (context, index) {
                   final lea = leas[index];

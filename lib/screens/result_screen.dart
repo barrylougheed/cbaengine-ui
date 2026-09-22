@@ -6,6 +6,7 @@ import '../models/message_status.dart';
 import '../providers/draft/draft_notifier.dart';
 import '../providers/message_flow/message_flow_notifier.dart';
 import '../providers/message_flow/message_flow_state.dart';
+import '../widgets/app_banner.dart';
 
 // A considered green rather than Material's stock (fairly dated-looking)
 // `Colors.green` — Material 3 has no built-in "success" color role, so
@@ -25,7 +26,7 @@ class ResultScreen extends ConsumerWidget {
     final state = ref.watch(messageFlowNotifierProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Result')),
+      appBar: AppBar(title: const AppBanner()),
       body: Center(
         child: Padding(padding: const EdgeInsets.all(24), child: _body(context, ref, state)),
       ),
@@ -72,14 +73,14 @@ class ResultScreen extends ConsumerWidget {
         },
         // The flow's actual end — nothing to lose by leaving from here,
         // so this resets straight away with no confirmation (unlike
-        // HomeAction, used on every earlier screen, which can discard an
+        // AppBanner, used on every earlier screen, which can discard an
         // in-progress draft and does confirm).
         if (isTerminal) ...[
           const SizedBox(height: 32),
           FilledButton(
             onPressed: () {
               ref.read(draftNotifierProvider.notifier).clear();
-              context.go('/council');
+              context.go('/');
             },
             child: const Text('Back to start'),
           ),

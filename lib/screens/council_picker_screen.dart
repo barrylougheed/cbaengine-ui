@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/draft/draft_notifier.dart';
 import '../providers/reference_data/reference_data_providers.dart';
+import '../widgets/app_banner.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/loading_view.dart';
 import '../widgets/step_progress_indicator.dart';
@@ -18,10 +19,10 @@ class CouncilPickerScreen extends ConsumerWidget {
     final councilsAsync = ref.watch(councilsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Select your council')),
+      appBar: AppBar(title: const AppBanner()),
       body: Column(
         children: [
-          const StepProgressIndicator(currentStep: 1, totalSteps: 5, label: 'Council'),
+          const StepProgressIndicator(currentStep: 1, totalSteps: 5, label: 'Select your council'),
           Expanded(
             child: councilsAsync.when(
               loading: () => const LoadingView(),
@@ -30,7 +31,7 @@ class CouncilPickerScreen extends ConsumerWidget {
                 onRetry: () => ref.invalidate(councilsProvider),
               ),
               data: (councils) => ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 itemCount: councils.length,
                 itemBuilder: (context, index) {
                   final council = councils[index];

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/auth/auth_notifier.dart';
 import '../providers/draft/draft_notifier.dart';
+import '../widgets/app_banner.dart';
 
 /// Reached from anywhere the moment authNotifierProvider reports an
 /// expired session (a 401 from any authenticated call) — the router's
@@ -17,7 +18,7 @@ class ReconnectScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Reconnect your email')),
+      appBar: AppBar(title: const AppBanner()),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -33,7 +34,7 @@ class ReconnectScreen extends ConsumerWidget {
                 onPressed: () {
                   ref.read(authNotifierProvider.notifier).signOut();
                   ref.read(draftNotifierProvider.notifier).clear();
-                  context.go('/council');
+                  context.go('/');
                 },
                 child: const Text('Start again'),
               ),
