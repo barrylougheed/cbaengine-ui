@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../models/message_status.dart';
+import '../providers/draft/draft_notifier.dart';
 import '../providers/message_flow/message_flow_notifier.dart';
 import '../providers/message_flow/message_flow_state.dart';
 
@@ -25,44 +27,65 @@ class ResultScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Result')),
       body: Center(
-        child: Padding(padding: const EdgeInsets.all(24), child: _body(context, state)),
+        child: Padding(padding: const EdgeInsets.all(24), child: _body(context, ref, state)),
       ),
     );
   }
 
-  Widget _body(BuildContext context, MessageFlowState state) {
-    return switch (state) {
-      MessageFlowIdle() ||
-      MessageFlowCreating() ||
-      MessageFlowConfirming() ||
-      MessageFlowSending() => const CircularProgressIndicator(),
-      MessageFlowResult(:final record) when record.status == MessageStatus.sent => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const _AnimatedOutcomeIcon(icon: Icons.check_circle_outline, color: _successColor),
-          const SizedBox(height: 16),
-          Text('Your message was sent.', style: Theme.of(context).textTheme.titleLarge),
+  Widget _body(BuildContext context, WidgetRef ref, MessageFlowState state) {
+    final isTerminal = state is MessageFlowResult || state is MessageFlowFailed;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        switch (state) {
+          MessageFlowIdle() ||
+          MessageFlowCreating() ||
+          MessageFlowConfirming() ||
+          MessageFlowSending() => const CircularProgressIndicator(),
+          MessageFlowResult(:final record) when record.status == MessageStatus.sent => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const _AnimatedOutcomeIcon(icon: Icons.check_circle_outline, color: _successColor),
+              const SizedBox(height: 16),
+              Text('Your message was sent.', style: Theme.of(context).textTheme.titleLarge),
+            ],
+          ),
+          MessageFlowResult(:final record) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _AnimatedOutcomeIcon(icon: Icons.error_outline, color: Theme.of(context).colorScheme.error),
+              const SizedBox(height: 16),
+              Text('Your message could not be sent.', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 8),
+              if (record.detail != null) Text(record.detail!, textAlign: TextAlign.center),
+            ],
+          ),
+          MessageFlowFailed(:final failure) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _AnimatedOutcomeIcon(icon: Icons.error_outline, color: Theme.of(context).colorScheme.error),
+              const SizedBox(height: 16),
+              Text(failure.message, textAlign: TextAlign.center),
+            ],
+          ),
+        },
+        // The flow's actual end — nothing to lose by leaving from here,
+        // so this resets straight away with no confirmation (unlike
+        // HomeAction, used on every earlier screen, which can discard an
+        // in-progress draft and does confirm).
+        if (isTerminal) ...[
+          const SizedBox(height: 32),
+          FilledButton(
+            onPressed: () {
+              ref.read(draftNotifierProvider.notifier).clear();
+              context.go('/council');
+            },
+            child: const Text('Back to start'),
+          ),
         ],
-      ),
-      MessageFlowResult(:final record) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _AnimatedOutcomeIcon(icon: Icons.error_outline, color: Theme.of(context).colorScheme.error),
-          const SizedBox(height: 16),
-          Text('Your message could not be sent.', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 8),
-          if (record.detail != null) Text(record.detail!, textAlign: TextAlign.center),
-        ],
-      ),
-      MessageFlowFailed(:final failure) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _AnimatedOutcomeIcon(icon: Icons.error_outline, color: Theme.of(context).colorScheme.error),
-          const SizedBox(height: 16),
-          Text(failure.message, textAlign: TextAlign.center),
-        ],
-      ),
-    };
+      ],
+    );
   }
 }
 

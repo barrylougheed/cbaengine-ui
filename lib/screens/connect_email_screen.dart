@@ -11,6 +11,7 @@ import '../providers/draft/draft_notifier.dart';
 import '../providers/message_flow/message_flow_notifier.dart';
 import '../services/oauth_fragment_parser.dart';
 import '../widgets/error_banner.dart';
+import '../widgets/home_action.dart';
 import '../widgets/loading_view.dart';
 import '../widgets/step_progress_indicator.dart';
 
@@ -139,7 +140,7 @@ class _ConnectEmailScreenState extends ConsumerState<ConnectEmailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Connect your email')),
+      appBar: AppBar(title: const Text('Connect your email'), actions: const [HomeAction()]),
       body: Column(
         children: [
           const StepProgressIndicator(currentStep: 5, totalSteps: 5, label: 'Connect & send'),

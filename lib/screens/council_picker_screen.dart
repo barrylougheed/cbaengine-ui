@@ -40,7 +40,7 @@ class CouncilPickerScreen extends ConsumerWidget {
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
                         ref.read(draftNotifierProvider.notifier).selectCouncil(council);
-                        context.go('/council/${council.id}/lea');
+                        context.push('/council/${council.id}/lea');
                       },
                     ),
                   );
@@ -59,7 +59,7 @@ class CouncilPickerScreen extends ConsumerWidget {
                 child: TextButton(
                   onPressed: () {
                     ref.read(draftNotifierProvider.notifier).selectTestRecipient();
-                    context.go('/compose');
+                    context.push('/compose');
                   },
                   child: const Text('Use test recipient (dev)'),
                 ),

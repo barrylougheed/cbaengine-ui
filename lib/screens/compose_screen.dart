@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../providers/draft/draft_notifier.dart';
 import '../providers/reference_data/reference_data_providers.dart';
 import '../widgets/error_banner.dart';
+import '../widgets/home_action.dart';
 import '../widgets/loading_view.dart';
 import '../widgets/step_progress_indicator.dart';
 
@@ -44,7 +45,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     final notifier = ref.read(draftNotifierProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(title: Text('Write your message — ${draft.lea?.name ?? ''}')),
+      appBar: AppBar(
+        title: Text('Write your message — ${draft.lea?.name ?? ''}'),
+        actions: const [HomeAction()],
+      ),
       body: Column(
         children: [
           const StepProgressIndicator(currentStep: 3, totalSteps: 5, label: 'Compose'),
@@ -90,7 +94,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   ),
                   const SizedBox(height: 16),
                   FilledButton(
-                    onPressed: draft.isReadyToReview ? () => context.go('/review') : null,
+                    onPressed: draft.isReadyToReview ? () => context.push('/review') : null,
                     child: const Text('Continue'),
                   ),
                   const SizedBox(height: 16),

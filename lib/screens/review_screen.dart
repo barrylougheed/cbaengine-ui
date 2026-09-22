@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/draft/draft_notifier.dart';
+import '../widgets/home_action.dart';
 import '../widgets/step_progress_indicator.dart';
 
 /// Step 4: shows the drafted message plus recipient name/party — still
@@ -23,7 +24,7 @@ class ReviewScreen extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Review your message')),
+      appBar: AppBar(title: const Text('Review your message'), actions: const [HomeAction()]),
       body: Column(
         children: [
           const StepProgressIndicator(currentStep: 4, totalSteps: 5, label: 'Review'),
@@ -78,7 +79,7 @@ class ReviewScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                FilledButton(onPressed: () => context.go('/connect'), child: const Text('Continue')),
+                FilledButton(onPressed: () => context.push('/connect'), child: const Text('Continue')),
                 const SizedBox(height: 16),
               ],
             ),

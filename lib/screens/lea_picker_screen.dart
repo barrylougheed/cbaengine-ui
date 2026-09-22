@@ -6,6 +6,7 @@ import '../api/api_exceptions.dart';
 import '../providers/draft/draft_notifier.dart';
 import '../providers/reference_data/reference_data_providers.dart';
 import '../widgets/error_banner.dart';
+import '../widgets/home_action.dart';
 import '../widgets/loading_view.dart';
 import '../widgets/step_progress_indicator.dart';
 
@@ -24,7 +25,7 @@ class LeaPickerScreen extends ConsumerWidget {
     final leasAsync = ref.watch(leasForCouncilProvider(councilId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Select your area')),
+      appBar: AppBar(title: const Text('Select your area'), actions: const [HomeAction()]),
       body: Column(
         children: [
           const StepProgressIndicator(currentStep: 2, totalSteps: 5, label: 'Local Electoral Area'),
@@ -55,7 +56,7 @@ class LeaPickerScreen extends ConsumerWidget {
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
                         ref.read(draftNotifierProvider.notifier).selectLea(lea);
-                        context.go('/compose');
+                        context.push('/compose');
                       },
                     ),
                   );
