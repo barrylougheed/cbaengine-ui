@@ -95,7 +95,11 @@ class _ConnectEmailScreenState extends ConsumerState<ConnectEmailScreen> {
     }
   }
 
-  Future<void> _handleOAuthResult(OAuthResult result) async {
+  Future<void> _handleOAuthResult(OAuthResult returned) async {
+    // Both the web return (fragment) and mobile return (app link) pass
+    // through here: only accept a connection this app started — see
+    // OAuthClientStateStore.
+    final result = await ref.read(oauthClientStateStoreProvider).verify(returned);
     switch (result) {
       case OAuthSuccess(:final token, :final email, :final provider):
         if (!mounted) return;

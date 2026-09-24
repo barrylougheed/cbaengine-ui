@@ -9,6 +9,14 @@ void main() {
 
       expect(result, const OAuthSuccess(token: 'abc123', email: 'resident@example.com', provider: 'google'));
     });
+
+    test('carries the echoed client_state through', () {
+      final result = OauthFragmentParser.parse(
+        'token=abc123&email=resident%40example.com&provider=google&client_state=xyz-789',
+      );
+
+      expect(result?.clientState, 'xyz-789');
+    });
   });
 
   group('failure', () {
@@ -30,6 +38,12 @@ void main() {
       final result = OauthFragmentParser.parse('error=provider_unavailable');
 
       expect(result, const OAuthFailure(errorCode: 'provider_unavailable', errorDescription: ''));
+    });
+
+    test('carries the echoed client_state through on a failure too', () {
+      final result = OauthFragmentParser.parse('error=access_denied&client_state=xyz-789');
+
+      expect(result?.clientState, 'xyz-789');
     });
 
     test('error takes precedence even if token-shaped params are also present', () {

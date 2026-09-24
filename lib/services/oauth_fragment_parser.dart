@@ -12,17 +12,22 @@ class OauthFragmentParser {
   static OAuthResult? parse(String fragment) {
     if (fragment.isEmpty) return null;
     final params = Uri.splitQueryString(fragment);
+    final clientState = params['client_state'];
 
     final error = params['error'];
     if (error != null) {
-      return OAuthFailure(errorCode: error, errorDescription: params['error_description'] ?? '');
+      return OAuthFailure(
+        errorCode: error,
+        errorDescription: params['error_description'] ?? '',
+        clientState: clientState,
+      );
     }
 
     final token = params['token'];
     final email = params['email'];
     final provider = params['provider'];
     if (token != null && email != null && provider != null) {
-      return OAuthSuccess(token: token, email: email, provider: provider);
+      return OAuthSuccess(token: token, email: email, provider: provider, clientState: clientState);
     }
 
     return null;

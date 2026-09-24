@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../api/api_client.dart';
 import '../config/app_config.dart';
 import '../models/oauth_result.dart';
+import 'oauth_client_state_store.dart';
 import 'oauth_fragment_parser.dart';
 
 /// Ties the API client, url_launcher, and app_links together into one
@@ -16,9 +17,10 @@ import 'oauth_fragment_parser.dart';
 /// (the actual parsing logic this delegates to) is the piece that's
 /// TDD'd.
 class OAuthService {
-  OAuthService(this._apiClient, {AppLinks? appLinks}) : _appLinks = appLinks ?? AppLinks();
+  OAuthService(this._apiClient, this._clientStateStore, {AppLinks? appLinks}) : _appLinks = appLinks ?? AppLinks();
 
   final ApiClient _apiClient;
+  final OAuthClientStateStore _clientStateStore;
   final AppLinks _appLinks;
 
   /// Web: navigates the current tab away to the provider's consent
@@ -34,6 +36,8 @@ class OAuthService {
     final authorizationUrl = await _apiClient.authorizeEmail(
       provider: provider,
       clientRedirectUri: clientRedirectUri,
+      // Checked on return by OAuthClientStateStore.verify.
+      clientState: await _clientStateStore.create(),
     );
     final uri = Uri.parse(authorizationUrl);
 

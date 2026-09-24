@@ -102,9 +102,13 @@ class ApiClient {
     return _decode(response, (json) => MessageRecord.fromJson(json as Map<String, dynamic>));
   }
 
-  Future<String> authorizeEmail({required String provider, required String clientRedirectUri}) async {
+  Future<String> authorizeEmail({
+    required String provider,
+    required String clientRedirectUri,
+    required String clientState,
+  }) async {
     final response = await _getPublic(
-      _uri('/email/authorize/$provider', {'client_redirect_uri': clientRedirectUri}),
+      _uri('/email/authorize/$provider', {'client_redirect_uri': clientRedirectUri, 'client_state': clientState}),
     );
     return _decode(response, (json) => json['authorization_url'] as String);
   }

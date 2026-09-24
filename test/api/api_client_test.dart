@@ -374,11 +374,12 @@ void main() {
   });
 
   group('authorizeEmail', () {
-    test('returns the authorization_url on 200', () async {
+    test('sends client_redirect_uri and client_state, and returns the authorization_url on 200', () async {
       when(
         () => httpClient.get(
           Uri.parse(
-            'http://localhost:8000/email/authorize/google?client_redirect_uri=cbaengine%3A%2F%2Foauth%2Fcallback',
+            'http://localhost:8000/email/authorize/google'
+            '?client_redirect_uri=cbaengine%3A%2F%2Foauth%2Fcallback&client_state=abc-123',
           ),
         ),
       ).thenAnswer((_) async => jsonResponse({'authorization_url': 'https://accounts.google.com/...'}, 200));
@@ -386,6 +387,7 @@ void main() {
       final url = await client.authorizeEmail(
         provider: 'google',
         clientRedirectUri: 'cbaengine://oauth/callback',
+        clientState: 'abc-123',
       );
 
       expect(url, 'https://accounts.google.com/...');
@@ -395,13 +397,18 @@ void main() {
       when(
         () => httpClient.get(
           Uri.parse(
-            'http://localhost:8000/email/authorize/google?client_redirect_uri=cbaengine%3A%2F%2Foauth%2Fcallback',
+            'http://localhost:8000/email/authorize/google'
+            '?client_redirect_uri=cbaengine%3A%2F%2Foauth%2Fcallback&client_state=abc-123',
           ),
         ),
       ).thenAnswer((_) async => jsonResponse({'detail': 'CBA_GOOGLE_CLIENT_ID is not set.'}, 503));
 
       expect(
-        () => client.authorizeEmail(provider: 'google', clientRedirectUri: 'cbaengine://oauth/callback'),
+        () => client.authorizeEmail(
+          provider: 'google',
+          clientRedirectUri: 'cbaengine://oauth/callback',
+          clientState: 'abc-123',
+        ),
         throwsA(isA<ServiceUnavailableException>()),
       );
     });

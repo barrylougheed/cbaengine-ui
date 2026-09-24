@@ -23,6 +23,15 @@ Future<void> main() async {
   // Uri.base.fragment, it can already be gone.
   final initialOauthFragment = kIsWeb && Uri.base.fragment.isNotEmpty ? Uri.base.fragment : null;
 
+  // The fragment can carry a live connection token: take it out of the
+  // address bar and this browser-history entry straight away, rather
+  // than relying on go_router's startup happening to drop it. urlStrategy
+  // is null off the web, so this is a no-op on mobile.
+  final strategy = urlStrategy;
+  if (initialOauthFragment != null && strategy != null) {
+    strategy.replaceState(null, '', strategy.prepareExternalUrl(strategy.getPath()));
+  }
+
   final prefs = await SharedPreferences.getInstance();
 
   runApp(

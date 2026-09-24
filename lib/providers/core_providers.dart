@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../api/api_client.dart';
 import '../config/app_config.dart';
 import '../services/draft_storage_service.dart';
+import '../services/oauth_client_state_store.dart';
 import '../services/oauth_service.dart';
 import 'auth/auth_notifier.dart';
 
@@ -30,8 +31,12 @@ final draftStorageServiceProvider = Provider<DraftStorageService>((ref) {
   return DraftStorageService(ref.watch(sharedPreferencesProvider));
 });
 
+final oauthClientStateStoreProvider = Provider<OAuthClientStateStore>((ref) {
+  return OAuthClientStateStore(ref.watch(sharedPreferencesProvider));
+});
+
 final oauthServiceProvider = Provider<OAuthService>((ref) {
-  return OAuthService(ref.watch(apiClientProvider));
+  return OAuthService(ref.watch(apiClientProvider), ref.watch(oauthClientStateStoreProvider));
 });
 
 /// The URL fragment captured in main() *before* runApp() — go_router
