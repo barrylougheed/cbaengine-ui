@@ -54,6 +54,9 @@ class HomeScreen extends StatelessWidget {
               ),
               const Spacer(),
               const Center(child: _SocialLinks()),
+              Center(
+                child: TextButton(onPressed: () => context.push('/privacy'), child: const Text('Privacy notice')),
+              ),
             ],
           ),
         ),

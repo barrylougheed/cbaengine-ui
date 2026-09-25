@@ -24,3 +24,9 @@ const String oauthWebClientRedirectUri = String.fromEnvironment(
 /// bundle ID it's derived from (com.cbaengine.app) — see the
 /// implementation plan.
 const String oauthMobileClientRedirectUri = 'cbaengine://oauth/callback';
+
+/// Where residents and councillors send privacy questions and requests
+/// (shown throughout the privacy notice). PLACEHOLDER — `.example` is a
+/// reserved domain that can't receive mail. Replace with CBAEngine's real
+/// contact address before go-live (see CBA/TODO.md).
+const String privacyContactEmail = 'contact@cbaengine.example';

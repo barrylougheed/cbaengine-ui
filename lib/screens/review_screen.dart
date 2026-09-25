@@ -79,6 +79,19 @@ class ReviewScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
+                // The explicit-consent moment (GDPR Article 9) for any
+                // sensitive information in the message — see PrivacyScreen.
+                Text(
+                  'Your message will be sent from your email account to these councillors, with a copy to you '
+                  'and to CBAEngine so we can see whether they reply. By continuing, you agree to CBAEngine '
+                  'processing your message, including any sensitive information in it.',
+                  style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(onPressed: () => context.push('/privacy'), child: const Text('Privacy notice')),
+                ),
+                const SizedBox(height: 8),
                 FilledButton(onPressed: () => context.push('/connect'), child: const Text('Continue')),
                 const SizedBox(height: 16),
               ],

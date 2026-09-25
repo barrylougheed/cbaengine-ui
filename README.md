@@ -129,6 +129,22 @@ flutter run -d web-server --web-port 5173
 
 then open `http://localhost:5173` yourself.
 
+These are debug builds: hundreds of separate script files, so a first load can take a while. Add
+`--release` for a quick, optimised build to click through (no hot reload).
+
+## Building for production
+
+```bash
+flutter build web --release --no-web-resources-cdn
+```
+
+`--no-web-resources-cdn` matters for privacy: without it, every visitor's browser loads Flutter's rendering
+engine from Google's CDN (`www.gstatic.com`), sending their IP address to Google. With it, the engine and
+its fallback font are served from `build/web` alongside the app. The Inter font is already bundled
+(`assets/fonts/`, licence in `OFL.txt`), so a build made this way contacts no Google servers. Emoji or
+scripts that Inter and Roboto don't cover would still make Flutter fetch a fallback font from Google. Setting
+`fontFallbackBaseUrl` to self-hosted fonts would close that gap, and CBA's `TODO.md` tracks it.
+
 ## Manually testing a real send, through the UI
 
 Same safety consideration as the backend: `BLOCK_REAL_COUNCILLOR_SENDS` is on by default, so a real

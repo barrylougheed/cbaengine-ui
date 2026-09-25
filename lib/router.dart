@@ -10,6 +10,7 @@ import 'screens/connect_email_screen.dart';
 import 'screens/council_picker_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/lea_picker_screen.dart';
+import 'screens/privacy_screen.dart';
 import 'screens/reconnect_screen.dart';
 import 'screens/result_screen.dart';
 import 'screens/review_screen.dart';
@@ -68,6 +69,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/connect', builder: (context, state) => const ConnectEmailScreen()),
       GoRoute(path: '/result', builder: (context, state) => const ResultScreen()),
       GoRoute(path: '/reconnect', builder: (context, state) => const ReconnectScreen()),
+      GoRoute(path: '/privacy', builder: (context, state) => const PrivacyScreen()),
     ],
   );
 });

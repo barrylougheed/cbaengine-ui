@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// CBAEngine's single branding seam. Material 3 throughout — the brief
 /// is "modern and immediately familiar", not a bespoke visual language,
@@ -8,14 +7,19 @@ import 'package:google_fonts/google_fonts.dart';
 /// color, and a handful of component shapes.
 const _seedColor = Color(0xFF1D4ED8); // a considered civic blue, not Material's stock indigo
 
+/// Bundled with the app (pubspec.yaml's `fonts:`), never fetched at
+/// runtime — see the note there.
+const _fontFamily = 'Inter';
+
 ThemeData buildAppTheme({required Brightness brightness}) {
   final colorScheme = ColorScheme.fromSeed(seedColor: _seedColor, brightness: brightness);
   final baseTextTheme = brightness == Brightness.dark ? ThemeData.dark().textTheme : ThemeData.light().textTheme;
-  final textTheme = GoogleFonts.interTextTheme(baseTextTheme);
+  final textTheme = baseTextTheme.apply(fontFamily: _fontFamily);
 
   return ThemeData(
     useMaterial3: true,
     brightness: brightness,
+    fontFamily: _fontFamily,
     colorScheme: colorScheme,
     textTheme: textTheme,
     scaffoldBackgroundColor: colorScheme.surface,
@@ -25,17 +29,13 @@ ThemeData buildAppTheme({required Brightness brightness}) {
       elevation: 0,
       scrolledUnderElevation: 1,
       centerTitle: false,
-      titleTextStyle: GoogleFonts.inter(
-        textStyle: baseTextTheme.titleLarge,
-        fontWeight: FontWeight.w600,
-        color: colorScheme.onSurface,
-      ),
+      titleTextStyle: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600, color: colorScheme.onSurface),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         minimumSize: const Size.fromHeight(48),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        textStyle: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 15),
+        textStyle: const TextStyle(fontFamily: _fontFamily, fontWeight: FontWeight.w600, fontSize: 15),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(

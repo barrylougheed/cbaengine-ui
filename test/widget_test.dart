@@ -34,5 +34,6 @@ void main() {
     expect(find.text('What would you like to do?'), findsOneWidget);
     expect(find.text('Contact your councillors'), findsOneWidget);
     expect(find.text('CBAEngine'), findsOneWidget);
+    expect(find.text('Privacy notice'), findsOneWidget);
   });
 }
