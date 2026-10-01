@@ -51,7 +51,7 @@ class _ConnectEmailScreenState extends ConsumerState<ConnectEmailScreen> {
     // from the live URL before this widget ever gets a chance to look.
     final fragment = ref.read(initialOauthFragmentProvider);
     if (fragment == null) return; // a plain visit to /connect, not a return trip
-    ref.read(initialOauthFragmentProvider.notifier).state = null; // consume once
+    ref.read(initialOauthFragmentProvider.notifier).consume(); // handled once only
 
     final result = OauthFragmentParser.parse(fragment);
     if (result == null) return;

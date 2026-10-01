@@ -36,9 +36,10 @@ Future<void> main() async {
 
   runApp(
     ProviderScope(
+      retry: noAutomaticRetry,
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
-        initialOauthFragmentProvider.overrideWith((ref) => initialOauthFragment),
+        initialOauthFragmentProvider.overrideWith(() => InitialOauthFragment(initialOauthFragment)),
       ],
       child: const CbaEngineApp(),
     ),

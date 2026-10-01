@@ -2,8 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'auth_state.dart';
 
-class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier() : super(const AuthState.unknown());
+class AuthNotifier extends Notifier<AuthState> {
+  @override
+  AuthState build() => const AuthState.unknown();
 
   void checking() {
     state = const AuthState.checking();
@@ -24,4 +25,4 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 }
 
-final authNotifierProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) => AuthNotifier());
+final authNotifierProvider = NotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);

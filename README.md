@@ -21,8 +21,8 @@ Council picker → LEA picker → Compose → Review → Connect email (OAuth)
   `GET /email/callback`, using `client_redirect_uri` and the URL **fragment** (never the query string —
   matches the backend's own design) on both web and mobile. Once connected, it auto-chains
   create → confirm → send with no extra tap, straight to **Result**.
-- **API client, models, error handling, OAuth fragment parsing, draft/token storage, and the
-  auth/message-flow notifiers are all unit-tested** (`flutter test` — 54 tests as of this writing).
+- **API client, models, error handling, OAuth fragment parsing, draft storage, and the
+  auth/message-flow notifiers are all unit-tested** (`flutter test` — 66 tests as of this writing).
 - Router guards prevent skipping steps via a raw URL (e.g. visiting `/review` with no draft bounces back
   to `/compose` → `/council`), and any `401` from the backend routes to `/reconnect` from anywhere.
 - **Not yet done:** real on-device testing on Android/iOS (see "Prerequisites").
@@ -49,8 +49,9 @@ to test):
 
 So the actual value on offer is: save one OAuth tap, for someone accidentally interrupted, within a
 one-hour window, occasionally. Worth revisiting for v2 if usage patterns turn out to disagree with this
-(e.g. real users reporting the reconnect prompt as annoying) — `TokenStorageService` already exists and
-is fully tested, so building the wiring later is cheap if it turns out to be warranted. What genuinely
+(e.g. real users reporting the reconnect prompt as annoying). An unused `TokenStorageService`, and the
+`flutter_secure_storage` package behind it, were removed to cut dependencies; they're in git history as a
+starting point if this is ever revisited. What genuinely
 *does* need to persist — the in-progress draft, surviving the OAuth redirect's page reload on web — is a
 hard technical requirement (not a nice-to-have) and is already built (`DraftStorageService`).
 

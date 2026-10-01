@@ -46,7 +46,27 @@ final oauthServiceProvider = Provider<OAuthService>((ref) {
 /// inside the widget tree (even in a screen's initState/post-frame
 /// callback) can already be too late. Overridden with the real captured
 /// value in main(); null on non-web or when there was nothing to
-/// capture. A StateProvider so ConnectEmailScreen can consume (null out)
-/// the value once it's handled it, so navigating back to /connect later
-/// in the same session never reprocesses a stale fragment.
-final initialOauthFragmentProvider = StateProvider<String?>((ref) => null);
+/// capture. ConnectEmailScreen consumes (nulls out) the value once it's
+/// handled it, so navigating back to /connect later in the same session
+/// never reprocesses a stale fragment.
+class InitialOauthFragment extends Notifier<String?> {
+  InitialOauthFragment([this._captured]);
+
+  final String? _captured;
+
+  @override
+  String? build() => _captured;
+
+  void consume() {
+    state = null;
+  }
+}
+
+final initialOauthFragmentProvider = NotifierProvider<InitialOauthFragment, String?>(InitialOauthFragment.new);
+
+/// Riverpod 3 retries a failing provider automatically by default. This
+/// app instead shows the failure straight away with its own "Retry"
+/// button (ErrorBanner), so a user with no connection isn't left looking
+/// at a spinner while retries run in the background. Passed to every
+/// ProviderScope.
+Duration? noAutomaticRetry(int retryCount, Object error) => null;

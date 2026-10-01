@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/council.dart';
 import '../../models/councillor_preview.dart';
 import '../../models/draft.dart';
 import '../../models/lea.dart';
+import '../core_providers.dart';
 
 /// The backend's manual-test-recipient fixture (see
 /// scripts/seed_manual_test_lea.py in the CBA repo) — resolvable by
@@ -21,8 +24,9 @@ const _testRecipientLea = Lea(
   ],
 );
 
-class DraftNotifier extends StateNotifier<Draft> {
-  DraftNotifier() : super(const Draft());
+class DraftNotifier extends Notifier<Draft> {
+  @override
+  Draft build() => const Draft();
 
   void selectCouncil(Council council) {
     // A new council invalidates any LEA picked under the previous one.
@@ -50,9 +54,16 @@ class DraftNotifier extends StateNotifier<Draft> {
     state = state.copyWith(body: body);
   }
 
+  /// Every "start over" path ends here (the banner's Start over, Result's
+  /// Back to start, Reconnect's Start again), so this also wipes the saved
+  /// copy — otherwise a draft abandoned mid-connect would stay in the
+  /// browser's storage indefinitely (GDPR review, finding 9).
   void clear() {
     state = const Draft();
+    // Read here, only when a draft is actually cleared — storage is set up
+    // in main() and needn't exist just to build the notifier.
+    unawaited(ref.read(draftStorageServiceProvider).clear());
   }
 }
 
-final draftNotifierProvider = StateNotifierProvider<DraftNotifier, Draft>((ref) => DraftNotifier());
+final draftNotifierProvider = NotifierProvider<DraftNotifier, Draft>(DraftNotifier.new);

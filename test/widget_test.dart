@@ -25,6 +25,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
+        retry: noAutomaticRetry,
         overrides: [apiClientProvider.overrideWithValue(apiClient)],
         child: const CbaEngineApp(),
       ),

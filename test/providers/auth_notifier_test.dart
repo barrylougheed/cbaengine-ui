@@ -1,43 +1,41 @@
 import 'package:app/providers/auth/auth_notifier.dart';
 import 'package:app/providers/auth/auth_state.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('starts unknown', () {
-    final notifier = AuthNotifier();
+  late ProviderContainer container;
+  AuthState state() => container.read(authNotifierProvider);
+  AuthNotifier notifier() => container.read(authNotifierProvider.notifier);
 
-    expect(notifier.state, const AuthState.unknown());
-    expect(notifier.state.isAuthenticated, isFalse);
+  setUp(() => container = ProviderContainer.test());
+
+  test('starts unknown', () {
+    expect(state(), const AuthState.unknown());
+    expect(state().isAuthenticated, isFalse);
   });
 
   test('setSession moves to authenticated with the given details', () {
-    final notifier = AuthNotifier();
+    notifier().setSession(token: 'the-token', email: 'resident@example.com', provider: 'google');
 
-    notifier.setSession(token: 'the-token', email: 'resident@example.com', provider: 'google');
-
-    expect(
-      notifier.state,
-      const AuthState.authenticated(token: 'the-token', email: 'resident@example.com', provider: 'google'),
-    );
-    expect(notifier.state.isAuthenticated, isTrue);
+    expect(state(), const AuthState.authenticated(token: 'the-token', email: 'resident@example.com', provider: 'google'));
+    expect(state().isAuthenticated, isTrue);
   });
 
   test('markExpired moves to expired and drops the token', () {
-    final notifier = AuthNotifier();
-    notifier.setSession(token: 'the-token', email: 'resident@example.com', provider: 'google');
+    notifier().setSession(token: 'the-token', email: 'resident@example.com', provider: 'google');
 
-    notifier.markExpired();
+    notifier().markExpired();
 
-    expect(notifier.state, const AuthState.expired());
-    expect(notifier.state.token, isNull);
+    expect(state(), const AuthState.expired());
+    expect(state().token, isNull);
   });
 
   test('signOut resets to unknown', () {
-    final notifier = AuthNotifier();
-    notifier.setSession(token: 'the-token', email: 'resident@example.com', provider: 'google');
+    notifier().setSession(token: 'the-token', email: 'resident@example.com', provider: 'google');
 
-    notifier.signOut();
+    notifier().signOut();
 
-    expect(notifier.state, const AuthState.unknown());
+    expect(state(), const AuthState.unknown());
   });
 }

@@ -37,8 +37,10 @@ class PrivacyScreen extends StatelessWidget {
         'Your email address, the area and topic you chose, which councillors were emailed, when, and '
             'whether they replied: 400 days. After that we keep only anonymous totals, plus an archive copy '
             'without your message for 90 more days, which is then deleted.',
-        'The subject and text of your message: deleted from our systems once it has been sent. Copies in '
-            'the monitoring mailbox are deleted after 60 days.',
+        'The text of your message: deleted from our systems as soon as it has been sent. The subject line is '
+            'kept a little longer, until our next check for replies (usually within a week), because it is '
+            'used to recognise our copy of your email. Copies in the monitoring mailbox are deleted after '
+            '60 days.',
         'The copies you and the councillors receive stay in your and their own mailboxes, which we don\'t '
             'control.',
       ],

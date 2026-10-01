@@ -19,7 +19,12 @@ class ReviewScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final draft = ref.watch(draftNotifierProvider);
-    final lea = draft.lea!; // router guard guarantees this is set
+    // The router guard keeps an LEA set while this screen is shown, with one
+    // exception: "Start over" (the banner's dialog) empties the draft while
+    // this screen is still animating away, which rebuilds it one last time.
+    // Show just the app bar for those few frames rather than fail to build.
+    final lea = draft.lea;
+    if (lea == null) return Scaffold(appBar: AppBar(title: const AppBanner()));
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
 
