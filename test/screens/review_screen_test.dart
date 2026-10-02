@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:app/api/api_client.dart';
 import 'package:app/app.dart';
 import 'package:app/models/council.dart';
 import 'package:app/models/councillor_preview.dart';
@@ -19,19 +18,15 @@ void main() {
   testWidgets('starting over from the review screen goes home without an error', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
-    final apiClient = ApiClient(
-      httpClient: MockClient((request) async => http.Response(jsonEncode({'councils': <Object>[]}), 200)),
-      baseUrl: 'http://localhost:8000',
-      getToken: () => null,
-      onUnauthorized: () {},
-    );
-    final container = ProviderContainer(
+    final container = ProviderContainer.test(
+      retry: noAutomaticRetry,
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
-        apiClientProvider.overrideWithValue(apiClient),
+        httpClientProvider.overrideWithValue(
+          MockClient((request) async => http.Response(jsonEncode({'councils': <Object>[]}), 200)),
+        ),
       ],
     );
-    addTearDown(container.dispose);
 
     container.read(draftNotifierProvider.notifier)
       ..selectCouncil(const Council(id: 'fingal-county-council', name: 'Fingal County Council'))

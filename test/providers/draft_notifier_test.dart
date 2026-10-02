@@ -118,7 +118,7 @@ void main() {
     await storage.write(PersistedDraft(subject: 'Subject', savedAt: DateTime.utc(2026, 1, 1)));
 
     notifier().clear();
-    await Future<void>.delayed(Duration.zero); // the wipe isn't awaited by clear()
+    await pumpEventQueue(); // the wipe isn't awaited by clear()
 
     expect(await storage.read(), isNull);
   });

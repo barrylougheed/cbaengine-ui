@@ -38,7 +38,6 @@ void main() {
   });
 
   late _MockHttpClient httpClient;
-  late ApiClient apiClient;
   late ProviderContainer container;
   MessageFlowState state() => container.read(messageFlowNotifierProvider);
   MessageFlowNotifier notifier() => container.read(messageFlowNotifierProvider.notifier);
@@ -49,7 +48,7 @@ void main() {
 
   setUp(() {
     httpClient = _MockHttpClient();
-    apiClient = ApiClient(
+    final apiClient = ApiClient(
       httpClient: httpClient,
       baseUrl: 'http://localhost:8000',
       getToken: () => 'the-token',
@@ -75,7 +74,6 @@ void main() {
   }
 
   test('starts idle', () {
-
     expect(state(), const MessageFlowIdle());
   });
 

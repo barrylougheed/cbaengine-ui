@@ -50,12 +50,8 @@ final oauthServiceProvider = Provider<OAuthService>((ref) {
 /// handled it, so navigating back to /connect later in the same session
 /// never reprocesses a stale fragment.
 class InitialOauthFragment extends Notifier<String?> {
-  InitialOauthFragment([this._captured]);
-
-  final String? _captured;
-
   @override
-  String? build() => _captured;
+  String? build() => null;
 
   void consume() {
     state = null;

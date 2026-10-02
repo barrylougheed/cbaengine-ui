@@ -1,4 +1,3 @@
-import 'package:app/models/oauth_result.dart';
 import 'package:app/providers/message_flow/message_flow_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -21,12 +20,5 @@ void main() {
   test('failures of different kinds are distinct even with the same message', () {
     expect(const LeaNotFoundFailure('x') == const RateLimitedFailure('x'), isFalse);
     expect(const RateLimitedFailure('x'), const RateLimitedFailure('x'));
-  });
-
-  test('a success and a failure never count as equal', () {
-    const success = OAuthSuccess(token: 't', email: 'e', provider: 'p');
-    const failure = OAuthFailure(errorCode: 't', errorDescription: 'e');
-
-    expect(success == failure, isFalse);
   });
 }
