@@ -74,7 +74,11 @@ class _ConnectEmailScreenState extends ConsumerState<ConnectEmailScreen> {
             councilName: draft.council?.name,
             leaId: draft.lea?.id,
             leaName: draft.lea?.name,
-            topic: draft.topic,
+            mode: draft.mode,
+            topicIds: [for (final topic in draft.topics) topic.id],
+            // Only the variants of the topics in use: the API rejects any others.
+            templateVariants: draft.variantsInUse,
+            senderName: draft.senderName.trim(),
             subject: draft.subject,
             body: draft.body,
             savedAt: DateTime.now().toUtc(),
@@ -118,7 +122,10 @@ class _ConnectEmailScreenState extends ConsumerState<ConnectEmailScreen> {
   Future<void> _runMessageFlowFromPersistedDraft() async {
     final storage = ref.read(draftStorageServiceProvider);
     final persisted = await storage.read();
-    if (persisted == null || persisted.leaId == null || persisted.topic == null) {
+    if (persisted == null ||
+        persisted.leaId == null ||
+        persisted.apiTopics.isEmpty ||
+        persisted.senderName.isEmpty) {
       if (!mounted) return;
       setState(() {
         _busy = false;
@@ -131,9 +138,11 @@ class _ConnectEmailScreenState extends ConsumerState<ConnectEmailScreen> {
         .read(messageFlowNotifierProvider.notifier)
         .startFlow(
           localElectoralArea: persisted.leaId!,
-          topic: persisted.topic!,
+          topics: persisted.apiTopics,
           subject: persisted.subject,
           body: persisted.body,
+          senderName: persisted.senderName,
+          templateVariants: persisted.templateVariants,
         );
     await storage.clear();
 

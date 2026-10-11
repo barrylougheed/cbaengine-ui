@@ -25,7 +25,8 @@ class PrivacyScreen extends StatelessWidget {
       'What happens when you send a message',
       [
         'Your message is sent from your own email account to each councillor for the area you chose, '
-            'as a separate email to each one.',
+            'as a separate email to each one. Each starts with the councillor\'s name and ends with the name '
+            'you typed. If you started from a topic, the email says so at the end.',
         'You are copied on every email, and so is CBAEngine\'s monitoring mailbox. Councillors can see '
             'both addresses, and their replies go to both.',
         'We use the monitoring mailbox only to see whether and when councillors reply.',
@@ -34,10 +35,11 @@ class PrivacyScreen extends StatelessWidget {
     (
       'What we keep, and for how long',
       [
-        'Your email address, the area and topic you chose, which councillors were emailed, when, and '
+        'Your email address, the area and topics you chose, which councillors were emailed, when, and '
             'whether they replied: 400 days. After that we keep only anonymous totals, plus an archive copy '
             'without your message for 90 more days, which is then deleted.',
-        'The text of your message: deleted from our systems as soon as it has been sent. The subject line is '
+        'The text of your message and the name you sign it with: deleted from our systems as soon as it has '
+            'been sent. The subject line is '
             'kept a little longer, until our next check for replies (usually within a week), because it is '
             'used to recognise our copy of your email. Copies in the monitoring mailbox are deleted after '
             '60 days.',

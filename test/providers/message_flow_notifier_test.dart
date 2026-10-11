@@ -18,7 +18,7 @@ Map<String, dynamic> _messageJson({required String id, required String status, S
     'id': id,
     'sender': 'resident@example.com',
     'local_electoral_area': 'fingal-balbriggan',
-    'topic': 'housing',
+    'topics': ['custom'],
     'subject': 'Subject',
     'body': 'Body',
     'councillors': <Object>[],
@@ -82,7 +82,7 @@ void main() {
     stubPost('/messages/msg-1/confirm', jsonResponse(_messageJson(id: 'msg-1', status: 'awaiting_confirmation'), 200));
     stubPost('/messages/msg-1/send', jsonResponse(_messageJson(id: 'msg-1', status: 'sent'), 200));
 
-    await notifier().startFlow(localElectoralArea: 'fingal-balbriggan', topic: 'housing', subject: 'Subject', body: 'Body');
+    await notifier().startFlow(localElectoralArea: 'fingal-balbriggan', topics: ['custom'], subject: 'Subject', body: 'Body', senderName: 'Sam Resident');
 
     final result = state();
     expect(result, isA<MessageFlowResult>());
@@ -104,7 +104,7 @@ void main() {
       ),
     );
 
-    await notifier().startFlow(localElectoralArea: 'fingal-balbriggan', topic: 'housing', subject: 'Subject', body: 'Body');
+    await notifier().startFlow(localElectoralArea: 'fingal-balbriggan', topics: ['custom'], subject: 'Subject', body: 'Body', senderName: 'Sam Resident');
 
     final result = state() as MessageFlowResult;
     expect(result.record.status.wireValue, 'failed');
@@ -119,7 +119,7 @@ void main() {
       }, 404),
     );
 
-    await notifier().startFlow(localElectoralArea: 'TEST-NOTFOUND', topic: 'housing', subject: 'Subject', body: 'Body');
+    await notifier().startFlow(localElectoralArea: 'TEST-NOTFOUND', topics: ['custom'], subject: 'Subject', body: 'Body', senderName: 'Sam Resident');
 
     expect(state(), isA<MessageFlowFailed>());
     expect((state() as MessageFlowFailed).failure, isA<LeaNotFoundFailure>());
@@ -133,7 +133,7 @@ void main() {
       jsonResponse({'detail': "You've already sent a message today. Please try again tomorrow."}, 429),
     );
 
-    await notifier().startFlow(localElectoralArea: 'fingal-balbriggan', topic: 'housing', subject: 'Subject', body: 'Body');
+    await notifier().startFlow(localElectoralArea: 'fingal-balbriggan', topics: ['custom'], subject: 'Subject', body: 'Body', senderName: 'Sam Resident');
 
     expect((state() as MessageFlowFailed).failure, isA<RateLimitedFailure>());
   });
@@ -141,9 +141,36 @@ void main() {
   test('any other ApiException maps to MessageFlowFailed(GenericFlowFailure)', () async {
     stubCreate(jsonResponse({'detail': 'Could not complete the email connection with the provider.'}, 502));
 
-    await notifier().startFlow(localElectoralArea: 'fingal-balbriggan', topic: 'housing', subject: 'Subject', body: 'Body');
+    await notifier().startFlow(localElectoralArea: 'fingal-balbriggan', topics: ['custom'], subject: 'Subject', body: 'Body', senderName: 'Sam Resident');
 
     expect((state() as MessageFlowFailed).failure, isA<GenericFlowFailure>());
+  });
+
+  test('drafts the message with the topics, the variants shown and the sign-off name', () async {
+    stubCreate(jsonResponse(_messageJson(id: 'msg-1', status: 'draft_created'), 201));
+    stubPost('/messages/msg-1/confirm', jsonResponse(_messageJson(id: 'msg-1', status: 'awaiting_confirmation'), 200));
+    stubPost('/messages/msg-1/send', jsonResponse(_messageJson(id: 'msg-1', status: 'sent'), 200));
+
+    await notifier().startFlow(
+      localElectoralArea: 'fingal-balbriggan',
+      topics: ['housing-crisis', 'save-stephens-green'],
+      subject: 'Subject',
+      body: 'Body',
+      senderName: 'Sam Resident',
+      templateVariants: {'housing-crisis': 'v3', 'save-stephens-green': 'v1'},
+    );
+
+    final captured = verify(
+      () => httpClient.post(
+        Uri.parse('http://localhost:8000/messages'),
+        headers: any(named: 'headers'),
+        body: captureAny(named: 'body'),
+      ),
+    ).captured;
+    final sent = jsonDecode(captured.single as String) as Map<String, dynamic>;
+    expect(sent['topics'], ['housing-crisis', 'save-stephens-green']);
+    expect(sent['template_variants'], {'housing-crisis': 'v3', 'save-stephens-green': 'v1'});
+    expect(sent['sender_name'], 'Sam Resident');
   });
 
   test('state transitions through creating/confirming/sending in order', () async {
@@ -153,7 +180,7 @@ void main() {
     final seen = <MessageFlowState>[];
     container.listen(messageFlowNotifierProvider, (previous, next) => seen.add(next));
 
-    await notifier().startFlow(localElectoralArea: 'fingal-balbriggan', topic: 'housing', subject: 'Subject', body: 'Body');
+    await notifier().startFlow(localElectoralArea: 'fingal-balbriggan', topics: ['custom'], subject: 'Subject', body: 'Body', senderName: 'Sam Resident');
 
     expect(seen.map((s) => s.runtimeType).toList(), [
       MessageFlowCreating,

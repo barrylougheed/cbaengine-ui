@@ -40,7 +40,7 @@ void main() {
     'id': 'msg-1',
     'sender': 'resident@example.com',
     'local_electoral_area': 'fingal-balbriggan',
-    'topic': 'housing',
+    'topics': ['housing-crisis'],
     'subject': 'Subject',
     'body': 'Body',
     'councillors': [
@@ -98,14 +98,102 @@ void main() {
   });
 
   group('getTopics', () {
-    test('returns the topic list on 200', () async {
+    test('returns the topics with their titles, and the email layout, on 200', () async {
+      when(() => httpClient.get(Uri.parse('http://localhost:8000/topics'))).thenAnswer(
+        (_) async => jsonResponse({
+          'topics': [
+            {'id': 'housing-crisis', 'title': 'Housing Crisis'},
+            {'id': 'save-stephens-green', 'title': "Save Stephen's Green"},
+          ],
+          'email_layout': {'greeting_format': 'Dear Councillor {name},', 'sign_off': 'Kind regards,'},
+        }, 200),
+      );
+
+      final catalogue = await client.getTopics();
+
+      expect(catalogue.topics.map((t) => t.id), ['housing-crisis', 'save-stephens-green']);
+      expect(catalogue.topics.map((t) => t.title), ['Housing Crisis', "Save Stephen's Green"]);
+      expect(catalogue.emailLayout.greetingFor('Conor Dowling'), 'Dear Councillor Conor Dowling,');
+      expect(catalogue.emailLayout.signOff, 'Kind regards,');
+    });
+  });
+
+  group('composeTopics', () {
+    const composedJson = {
+      'topics': ['housing-crisis', 'save-stephens-green'],
+      'variants': {'housing-crisis': 'v3', 'save-stephens-green': 'v1'},
+      'subject': "Your stance on Housing Crisis and Save Stephen's Green",
+      'body': 'Housing Crisis\nSome text.',
+      'footer': 'Started from a CBA topic template.',
+    };
+
+    void stubCompose(http.Response response) {
       when(
-        () => httpClient.get(Uri.parse('http://localhost:8000/topics')),
-      ).thenAnswer((_) async => jsonResponse({'topics': ['housing', 'other']}, 200));
+        () => httpClient.post(
+          Uri.parse('http://localhost:8000/topics/compose'),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        ),
+      ).thenAnswer((_) async => response);
+    }
 
-      final topics = await client.getTopics();
+    test('needs no sign-in: posts the area, topics and pinned variants with no Authorization header', () async {
+      stubCompose(jsonResponse(composedJson, 200));
 
-      expect(topics, ['housing', 'other']);
+      final composed = await client.composeTopics(
+        localElectoralArea: 'fingal-balbriggan',
+        topics: ['housing-crisis', 'save-stephens-green'],
+        variants: {'housing-crisis': 'v3'},
+      );
+
+      expect(composed.topics, ['housing-crisis', 'save-stephens-green']);
+      expect(composed.variants, {'housing-crisis': 'v3', 'save-stephens-green': 'v1'});
+      expect(composed.subject, startsWith('Your stance on'));
+      expect(composed.footer, 'Started from a CBA topic template.');
+      final captured = verify(
+        () => httpClient.post(
+          Uri.parse('http://localhost:8000/topics/compose'),
+          headers: captureAny(named: 'headers'),
+          body: captureAny(named: 'body'),
+        ),
+      ).captured;
+      expect((captured[0] as Map).containsKey('Authorization'), isFalse);
+      expect(jsonDecode(captured[1] as String), {
+        'local_electoral_area': 'fingal-balbriggan',
+        'topics': ['housing-crisis', 'save-stephens-green'],
+        'variants': {'housing-crisis': 'v3'},
+      });
+    });
+
+    test('throws NotFoundException on 404 (unknown area or topic)', () async {
+      stubCompose(jsonResponse({'detail': 'Topic not found.'}, 404));
+
+      expect(
+        () => client.composeTopics(localElectoralArea: 'fingal-balbriggan', topics: ['nope']),
+        throwsA(isA<NotFoundException>()),
+      );
+    });
+
+    test('keeps the server\'s message when too many topics were chosen (422 with a plain detail)', () async {
+      stubCompose(jsonResponse({'detail': 'Too many topics for one email. Please choose fewer.'}, 422));
+
+      await expectLater(
+        client.composeTopics(localElectoralArea: 'fingal-balbriggan', topics: ['a', 'b']),
+        throwsA(
+          isA<ApiException>().having((e) => e.message, 'message', 'Too many topics for one email. Please choose fewer.'),
+        ),
+      );
+    });
+
+    test('throws NetworkException when there is no response', () async {
+      when(
+        () => httpClient.post(any(), headers: any(named: 'headers'), body: any(named: 'body')),
+      ).thenThrow(Exception('offline'));
+
+      expect(
+        () => client.composeTopics(localElectoralArea: 'fingal-balbriggan', topics: ['housing-crisis']),
+        throwsA(isA<NetworkException>()),
+      );
     });
   });
 
@@ -182,9 +270,10 @@ void main() {
       expect(
         () => client.createMessage(
           localElectoralArea: 'fingal-balbriggan',
-          topic: 'housing',
+          topics: ['custom'],
           subject: 'Subject',
           body: 'Body',
+          senderName: 'Sam Resident',
         ),
         throwsA(isA<UnauthenticatedException>()),
       );
@@ -203,9 +292,10 @@ void main() {
 
       final record = await client.createMessage(
         localElectoralArea: 'fingal-balbriggan',
-        topic: 'housing',
+        topics: ['custom'],
         subject: 'Subject',
         body: 'Body',
+        senderName: 'Sam Resident',
       );
 
       expect(record.id, 'msg-1');
@@ -217,6 +307,42 @@ void main() {
         ),
       ).captured;
       expect((captured.single as Map)['Authorization'], 'Bearer the-token');
+    });
+
+    test('sends the topics, the variants shown and the name for the sign-off', () async {
+      token = 'the-token';
+      when(
+        () => httpClient.post(
+          Uri.parse('http://localhost:8000/messages'),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        ),
+      ).thenAnswer((_) async => jsonResponse(messageJson, 201));
+
+      await client.createMessage(
+        localElectoralArea: 'fingal-balbriggan',
+        topics: ['housing-crisis', 'save-stephens-green'],
+        subject: 'Subject',
+        body: 'Body',
+        senderName: 'Sam Resident',
+        templateVariants: {'housing-crisis': 'v3', 'save-stephens-green': 'v1'},
+      );
+
+      final captured = verify(
+        () => httpClient.post(
+          Uri.parse('http://localhost:8000/messages'),
+          headers: any(named: 'headers'),
+          body: captureAny(named: 'body'),
+        ),
+      ).captured;
+      expect(jsonDecode(captured.single as String), {
+        'local_electoral_area': 'fingal-balbriggan',
+        'topics': ['housing-crisis', 'save-stephens-green'],
+        'template_variants': {'housing-crisis': 'v3', 'save-stephens-green': 'v1'},
+        'subject': 'Subject',
+        'body': 'Body',
+        'sender_name': 'Sam Resident',
+      });
     });
 
     test('throws UnauthorizedException on 401 and calls onUnauthorized', () async {
@@ -237,9 +363,10 @@ void main() {
       await expectLater(
         client.createMessage(
           localElectoralArea: 'fingal-balbriggan',
-          topic: 'housing',
+          topics: ['custom'],
           subject: 'Subject',
           body: 'Body',
+          senderName: 'Sam Resident',
         ),
         throwsA(isA<UnauthorizedException>()),
       );
@@ -264,9 +391,10 @@ void main() {
       expect(
         () => client.createMessage(
           localElectoralArea: 'TEST-NOTFOUND',
-          topic: 'housing',
+          topics: ['custom'],
           subject: 'Subject',
           body: 'Body',
+          senderName: 'Sam Resident',
         ),
         throwsA(isA<NotFoundException>()),
       );
@@ -285,9 +413,9 @@ void main() {
           'detail': [
             {
               'type': 'value_error',
-              'loc': ['body', 'topic'],
-              'msg': 'topic must be one of (...)',
-              'input': 'not-a-topic',
+              'loc': ['body', 'topics'],
+              'msg': 'Value error, unknown topic: not-a-topic',
+              'input': ['not-a-topic'],
             },
           ],
         }, 422),
@@ -296,14 +424,15 @@ void main() {
       try {
         await client.createMessage(
           localElectoralArea: 'fingal-balbriggan',
-          topic: 'not-a-topic',
+          topics: ['not-a-topic'],
           subject: 'Subject',
           body: 'Body',
+          senderName: 'Sam Resident',
         );
         fail('expected ValidationException');
       } on ValidationException catch (e) {
-        expect(e.errors.single.loc, ['body', 'topic']);
-        expect(e.errors.single.msg, 'topic must be one of (...)');
+        expect(e.errors.single.loc, ['body', 'topics']);
+        expect(e.errors.single.msg, 'Value error, unknown topic: not-a-topic');
       }
     });
   });
@@ -347,7 +476,7 @@ void main() {
         'id': 'msg-1',
         'sender': 'resident@example.com',
         'local_electoral_area': 'fingal-balbriggan',
-        'topic': 'housing',
+        'topics': ['housing-crisis'],
         'subject': 'Subject',
         'body': 'Body',
         'councillors': <Object>[],

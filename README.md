@@ -1,7 +1,8 @@
 # cbaengine-ui
 
 The Flutter frontend for [CBAEngine](../CBA) — connect your email, pick your council and Local Electoral
-Area, draft a message, review who it'll reach, and send it through your own connected email account.
+Area, write a message (or start from one or more pre-defined topics), review who it'll reach, and send
+it through your own connected email account.
 Targets web, Android, and iOS from one codebase.
 
 ## Current state
@@ -14,15 +15,26 @@ Council picker → LEA picker → Compose → Review → Connect email (OAuth)
 ```
 
 - **Council picker, LEA picker, Compose, Review** are fully wired to the live backend (`GET /councils`,
-  `GET /councils/{id}/leas`, `GET /topics`) via Riverpod — real council/LEA/topic data, real recipient
+  `GET /councils/{id}/leas`, `GET /topics`, `POST /topics/compose`) via Riverpod — real council/LEA/topic
+  data, real recipient
   names and parties on Review (never an email address — that stays server-side until a draft actually
   exists).
+- **Compose** has a toggle, **Select a topic | Write your own** (default: select a topic).
+  - *Select a topic*: tick one or more topics. The server writes a first draft (a random one of each
+    topic's variants, kept while topics are ticked and un-ticked), which the resident can edit. Changing
+    the topics, or switching mode, after editing asks "This replaces your edits. Continue?" first.
+  - *Write your own*: empty subject and message.
+  - Either way the resident types **Your name** (it signs off the email). The server adds "Dear
+    Councillor <name>," for each councillor and the sign-off around the text, plus a read-only footer for
+    topic-based emails; both are shown on Review.
+  - Text left in `[[double square brackets]]` is flagged and blocks Continue: it is a placeholder the
+    topic's author still has to fill in, and the API refuses it.
 - **Connect** triggers real OAuth (Google/Microsoft) via `GET /email/authorize` +
   `GET /email/callback`, using `client_redirect_uri` and the URL **fragment** (never the query string —
   matches the backend's own design) on both web and mobile. Once connected, it auto-chains
   create → confirm → send with no extra tap, straight to **Result**.
 - **API client, models, error handling, OAuth fragment parsing, draft storage, and the
-  auth/message-flow notifiers are all unit-tested** (`flutter test` — 66 tests as of this writing).
+  auth/message-flow notifiers are all unit-tested** (`flutter test`).
 - Router guards prevent skipping steps via a raw URL (e.g. visiting `/review` with no draft bounces back
   to `/compose` → `/council`), and any `401` from the backend routes to `/reconnect` from anywhere.
 - **Not yet done:** real on-device testing on Android/iOS (see "Prerequisites").

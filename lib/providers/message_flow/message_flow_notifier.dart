@@ -14,18 +14,22 @@ class MessageFlowNotifier extends Notifier<MessageFlowState> {
 
   Future<void> startFlow({
     required String localElectoralArea,
-    required String topic,
+    required List<String> topics,
     required String subject,
     required String body,
+    required String senderName,
+    Map<String, String> templateVariants = const {},
   }) async {
     final apiClient = ref.read(apiClientProvider);
     try {
       state = const MessageFlowCreating();
       final created = await apiClient.createMessage(
         localElectoralArea: localElectoralArea,
-        topic: topic,
+        topics: topics,
         subject: subject,
         body: body,
+        senderName: senderName,
+        templateVariants: templateVariants,
       );
 
       state = const MessageFlowConfirming();

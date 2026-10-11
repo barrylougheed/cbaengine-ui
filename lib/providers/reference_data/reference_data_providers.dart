@@ -2,9 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/council.dart';
 import '../../models/lea.dart';
+import '../../models/topic_catalogue.dart';
 import '../core_providers.dart';
 
-final topicsProvider = FutureProvider<List<String>>((ref) {
+/// The topics to pick from and the fixed parts of every email (greeting and
+/// sign-off), loaded once from GET /topics.
+final topicCatalogueProvider = FutureProvider<TopicCatalogue>((ref) {
   return ref.watch(apiClientProvider).getTopics();
 });
 

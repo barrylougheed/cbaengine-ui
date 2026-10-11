@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../models/draft.dart';
 import '../providers/draft/draft_notifier.dart';
+import '../providers/reference_data/reference_data_providers.dart';
 import '../widgets/app_banner.dart';
 import '../widgets/step_progress_indicator.dart';
 
@@ -27,6 +29,11 @@ class ReviewScreen extends ConsumerWidget {
     if (lea == null) return Scaffold(appBar: AppBar(title: const AppBanner()));
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
+    // The fixed parts the server adds around the text (greeting, sign-off).
+    // Already loaded by the compose screen; if it could not be, the preview
+    // simply leaves them out rather than guessing at the server's wording.
+    final layout = ref.watch(topicCatalogueProvider).value?.emailLayout;
+    final firstCouncillor = lea.councillors.isEmpty ? null : lea.councillors.first.name;
 
     return Scaffold(
       appBar: AppBar(title: const AppBanner()),
@@ -42,7 +49,12 @@ class ReviewScreen extends ConsumerWidget {
                   style: textTheme.labelLarge?.copyWith(color: colorScheme.primary),
                 ),
                 const SizedBox(height: 2),
-                Text('Topic: ${draft.topic}', style: textTheme.bodySmall),
+                Text(
+                  draft.mode == ComposeMode.ownWords
+                      ? 'Written by you'
+                      : 'Topics: ${draft.topics.map((topic) => topic.title).join(', ')}',
+                  style: textTheme.bodySmall,
+                ),
                 const SizedBox(height: 12),
                 Card(
                   child: Padding(
@@ -52,7 +64,25 @@ class ReviewScreen extends ConsumerWidget {
                       children: [
                         Text(draft.subject, style: textTheme.titleLarge),
                         const SizedBox(height: 8),
+                        if (layout != null && firstCouncillor != null) ...[
+                          Text(layout.greetingFor(firstCouncillor)),
+                          Text(
+                            "Each councillor's own name is used in the greeting.",
+                            style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
                         Text(draft.body),
+                        const SizedBox(height: 12),
+                        if (layout != null) Text(layout.signOff),
+                        Text(draft.senderName.trim()),
+                        if (draft.footer != null) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            draft.footer!,
+                            style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                          ),
+                        ],
                       ],
                     ),
                   ),

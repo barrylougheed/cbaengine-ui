@@ -8,9 +8,11 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../models/composed_topics.dart';
 import '../models/council.dart';
 import '../models/lea.dart';
 import '../models/message_record.dart';
+import '../models/topic_catalogue.dart';
 import 'api_exceptions.dart';
 
 /// One class, every CBAEngine endpoint as a method. Always throws a
@@ -40,9 +42,27 @@ class ApiClient {
     return uri.replace(queryParameters: queryParameters);
   }
 
-  Future<List<String>> getTopics() async {
+  /// The pre-defined topics, and how every email is laid out around the
+  /// resident's text (greeting and sign-off).
+  Future<TopicCatalogue> getTopics() async {
     final response = await _getPublic(_uri('/topics'));
-    return _decode(response, (json) => List<String>.from(json['topics'] as List));
+    return _decode(response, (json) => TopicCatalogue.fromJson(json as Map<String, dynamic>));
+  }
+
+  /// The subject and body for the chosen topics. Public (no sign-in): the
+  /// resident reads and edits the text before they connect their email.
+  /// [variants] are ones already shown (topic id -> variant id): the server
+  /// keeps them and picks a random variant only for topics without one.
+  Future<ComposedTopics> composeTopics({
+    required String localElectoralArea,
+    required List<String> topics,
+    Map<String, String> variants = const {},
+  }) async {
+    final response = await _postPublic(
+      _uri('/topics/compose'),
+      jsonBody: jsonEncode({'local_electoral_area': localElectoralArea, 'topics': topics, 'variants': variants}),
+    );
+    return _decode(response, (json) => ComposedTopics.fromJson(json as Map<String, dynamic>));
   }
 
   Future<List<Council>> getCouncils() async {
@@ -71,17 +91,21 @@ class ApiClient {
 
   Future<MessageRecord> createMessage({
     required String localElectoralArea,
-    required String topic,
+    required List<String> topics,
     required String subject,
     required String body,
+    required String senderName,
+    Map<String, String> templateVariants = const {},
   }) async {
     final response = await _postAuthed(
       _uri('/messages'),
       jsonBody: jsonEncode({
         'local_electoral_area': localElectoralArea,
-        'topic': topic,
+        'topics': topics,
+        'template_variants': templateVariants,
         'subject': subject,
         'body': body,
+        'sender_name': senderName,
       }),
     );
     return _decode(response, (json) => MessageRecord.fromJson(json as Map<String, dynamic>));
@@ -116,6 +140,14 @@ class ApiClient {
   Future<http.Response> _getPublic(Uri uri) async {
     try {
       return await _httpClient.get(uri);
+    } catch (e) {
+      throw NetworkException(e.toString());
+    }
+  }
+
+  Future<http.Response> _postPublic(Uri uri, {required String jsonBody}) async {
+    try {
+      return await _httpClient.post(uri, headers: {'Content-Type': 'application/json'}, body: jsonBody);
     } catch (e) {
       throw NetworkException(e.toString());
     }
