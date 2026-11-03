@@ -125,11 +125,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       appBar: AppBar(title: const AppBanner()),
       body: Column(
         children: [
-          StepProgressIndicator(
-            currentStep: 3,
-            totalSteps: 5,
-            label: 'Write your message — ${draft.lea?.name ?? ''}',
-          ),
+          StepProgressIndicator(currentStep: 3, totalSteps: 5, label: 'Write your message — ${draft.lea?.name ?? ''}'),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -194,8 +190,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   TextField(
                     controller: _bodyController,
                     decoration: const InputDecoration(labelText: 'Message', alignLabelWithHint: true),
-                    minLines: 10,
-                    maxLines: null,
+                    minLines: 8,
+                    maxLines: 14, // taller drafts scroll inside the field, so the notes and Continue stay reachable
                     keyboardType: TextInputType.multiline,
                     onChanged: notifier.setBody,
                   ),
@@ -225,12 +221,22 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   Text('Pick a topic to see the draft.', style: textTheme.bodySmall),
                 ],
                 const SizedBox(height: 16),
-                FilledButton(
+              ],
+            ),
+          ),
+          // Outside the scrolling list, so Continue is always on screen however
+          // long the draft is (a long message otherwise pushes it out of reach).
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton(
                   onPressed: draft.isReadyToReview && !_composing ? () => context.push('/review') : null,
                   child: const Text('Continue'),
                 ),
-                const SizedBox(height: 16),
-              ],
+              ),
             ),
           ),
         ],

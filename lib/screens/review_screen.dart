@@ -44,10 +44,7 @@ class ReviewScreen extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               children: [
-                Text(
-                  '${lea.name}, ${lea.council}',
-                  style: textTheme.labelLarge?.copyWith(color: colorScheme.primary),
-                ),
+                Text('${lea.name}, ${lea.council}', style: textTheme.labelLarge?.copyWith(color: colorScheme.primary)),
                 const SizedBox(height: 2),
                 Text(
                   draft.mode == ComposeMode.ownWords
@@ -127,9 +124,18 @@ class ReviewScreen extends ConsumerWidget {
                   child: TextButton(onPressed: () => context.push('/privacy'), child: const Text('Privacy notice')),
                 ),
                 const SizedBox(height: 8),
-                FilledButton(onPressed: () => context.push('/connect'), child: const Text('Continue')),
-                const SizedBox(height: 16),
               ],
+            ),
+          ),
+          // Outside the scrolling list so Continue is always on screen.
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton(onPressed: () => context.push('/connect'), child: const Text('Continue')),
+              ),
             ),
           ),
         ],

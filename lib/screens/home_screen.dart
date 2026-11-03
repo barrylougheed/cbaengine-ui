@@ -19,45 +19,56 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const AppBanner()),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Hold yourself accountable for holding power accountable.',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontStyle: FontStyle.italic, color: colorScheme.primary),
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Hold yourself accountable for holding power accountable.',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontStyle: FontStyle.italic, color: colorScheme.primary),
+                      ),
+                      const SizedBox(height: 24),
+                      Text('What would you like to do?', style: Theme.of(context).textTheme.headlineSmall),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Pick an option below to get started.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                      ),
+                      const SizedBox(height: 24),
+                      _FeatureCard(
+                        icon: Icons.forum_outlined,
+                        title: 'Contact your councillors',
+                        subtitle: 'Draft and send a message to your local councillors.',
+                        onTap: () => context.push('/council'),
+                      ),
+                      const SizedBox(height: 12),
+                      const _FeatureCard(
+                        icon: Icons.link_outlined,
+                        title: 'Create a campaign link',
+                        subtitle: 'Share a pre-filled message for others to send.',
+                        badge: 'Coming soon',
+                        onTap: null,
+                      ),
+                      const Spacer(),
+                      const Center(child: _SocialLinks()),
+                      Center(
+                        child: TextButton(
+                          onPressed: () => context.push('/privacy'),
+                          child: const Text('Privacy notice'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              const SizedBox(height: 24),
-              Text('What would you like to do?', style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 8),
-              Text(
-                'Pick an option below to get started.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-              ),
-              const SizedBox(height: 24),
-              _FeatureCard(
-                icon: Icons.forum_outlined,
-                title: 'Contact your councillors',
-                subtitle: 'Draft and send a message to your local councillors.',
-                onTap: () => context.push('/council'),
-              ),
-              const SizedBox(height: 12),
-              const _FeatureCard(
-                icon: Icons.link_outlined,
-                title: 'Create a campaign link',
-                subtitle: 'Share a pre-filled message for others to send.',
-                badge: 'Coming soon',
-                onTap: null,
-              ),
-              const Spacer(),
-              const Center(child: _SocialLinks()),
-              Center(
-                child: TextButton(onPressed: () => context.push('/privacy'), child: const Text('Privacy notice')),
-              ),
-            ],
+            ),
           ),
         ),
       ),

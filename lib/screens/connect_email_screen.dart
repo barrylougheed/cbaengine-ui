@@ -122,10 +122,7 @@ class _ConnectEmailScreenState extends ConsumerState<ConnectEmailScreen> {
   Future<void> _runMessageFlowFromPersistedDraft() async {
     final storage = ref.read(draftStorageServiceProvider);
     final persisted = await storage.read();
-    if (persisted == null ||
-        persisted.leaId == null ||
-        persisted.apiTopics.isEmpty ||
-        persisted.senderName.isEmpty) {
+    if (persisted == null || persisted.leaId == null || persisted.apiTopics.isEmpty || persisted.senderName.isEmpty) {
       if (!mounted) return;
       setState(() {
         _busy = false;
@@ -161,22 +158,21 @@ class _ConnectEmailScreenState extends ConsumerState<ConnectEmailScreen> {
             child: Center(
               child: _busy
                   ? const LoadingView()
-                  : Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (_error != null) ...[
-                            ErrorBanner(message: _error!),
-                            const SizedBox(height: 16),
+                  : SingleChildScrollView(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_error != null) ...[ErrorBanner(message: _error!), const SizedBox(height: 16)],
+                            const Text('Connect the email account you want to send from.'),
+                            const SizedBox(height: 24),
+                            FilledButton(
+                              onPressed: () => _pickProviderAndConnect(context),
+                              child: const Text('Connect email'),
+                            ),
                           ],
-                          const Text('Connect the email account you want to send from.'),
-                          const SizedBox(height: 24),
-                          FilledButton(
-                            onPressed: () => _pickProviderAndConnect(context),
-                            child: const Text('Connect email'),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
             ),

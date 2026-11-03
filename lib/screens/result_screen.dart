@@ -28,7 +28,9 @@ class ResultScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const AppBanner()),
       body: Center(
-        child: Padding(padding: const EdgeInsets.all(24), child: _body(context, ref, state)),
+        child: SingleChildScrollView(
+          child: Padding(padding: const EdgeInsets.all(24), child: _body(context, ref, state)),
+        ),
       ),
     );
   }
@@ -106,7 +108,10 @@ class _AnimatedOutcomeIcon extends StatelessWidget {
       duration: const Duration(milliseconds: 350),
       curve: Curves.easeOutBack,
       builder: (context, value, child) {
-        return Opacity(opacity: value.clamp(0, 1), child: Transform.scale(scale: value, child: child));
+        return Opacity(
+          opacity: value.clamp(0, 1),
+          child: Transform.scale(scale: value, child: child),
+        );
       },
       child: Icon(icon, color: color, size: 56),
     );
