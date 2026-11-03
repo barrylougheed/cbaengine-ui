@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../models/council.dart';
 import '../providers/draft/draft_notifier.dart';
 import '../providers/reference_data/reference_data_providers.dart';
+import '../utils/counts.dart';
 import '../widgets/app_banner.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/loading_view.dart';
@@ -98,6 +99,20 @@ class _CouncilPickerScreenState extends ConsumerState<CouncilPickerScreen> {
                         onChanged: _setQuery,
                       ),
                     ),
+                    if (shown.any((council) => council.councillorCount > 0))
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            '${countOf(shown.length, 'council')} · '
+                            '${countOf(shown.fold<int>(0, (sum, council) => sum + council.councillorCount), 'councillor')}',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ),
                     Expanded(
                       child: shown.isEmpty
                           ? Center(
@@ -121,6 +136,12 @@ class _CouncilPickerScreenState extends ConsumerState<CouncilPickerScreen> {
                                   return Card(
                                     child: ListTile(
                                       title: Text(council.name),
+                                      subtitle: council.councillorCount > 0
+                                          ? Text(
+                                              '${countOf(council.areaCount, 'area')} · '
+                                              '${countOf(council.councillorCount, 'councillor')}',
+                                            )
+                                          : null,
                                       trailing: const Icon(Icons.chevron_right),
                                       onTap: () {
                                         ref.read(draftNotifierProvider.notifier).selectCouncil(council);

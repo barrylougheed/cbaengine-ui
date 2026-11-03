@@ -56,7 +56,10 @@ class ConflictException extends ApiException {
 }
 
 class RateLimitedException extends ApiException {
-  const RateLimitedException(super.message);
+  const RateLimitedException(super.message, {this.availableAt});
+
+  /// When the sender may send again, if the API said (an older one does not).
+  final DateTime? availableAt;
 }
 
 class ServiceUnavailableException extends ApiException {

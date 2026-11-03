@@ -1,11 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_exceptions.dart';
+import '../../utils/friendly_time.dart';
 import '../core_providers.dart';
 import 'message_flow_state.dart';
 
 /// Drives create -> confirm -> send straight through with no pause in
-/// between (per the implementation plan: Review's "Continue" tap is
+/// between (per the implementation plan: Review's "Connect email and send" tap is
 /// already the user's explicit confirmation, so nothing after a
 /// successful connect needs a second one).
 class MessageFlowNotifier extends Notifier<MessageFlowState> {
@@ -45,7 +46,7 @@ class MessageFlowNotifier extends Notifier<MessageFlowState> {
     } on NotFoundException catch (e) {
       state = MessageFlowFailed(LeaNotFoundFailure(e.message));
     } on RateLimitedException catch (e) {
-      state = MessageFlowFailed(RateLimitedFailure(e.message));
+      state = MessageFlowFailed(RateLimitedFailure(_rateLimitMessage(e)));
     } on ApiException catch (e) {
       // Includes UnauthorizedException — the ApiClient's onUnauthorized
       // callback already routes the user to /reconnect via
@@ -53,6 +54,15 @@ class MessageFlowNotifier extends Notifier<MessageFlowState> {
       // once that redirect happens, but still needs a defined value.
       state = MessageFlowFailed(GenericFlowFailure(e.message));
     }
+  }
+
+  /// "... You can send again after 14:32 tomorrow." in the resident's own time
+  /// zone when the API said when; the API's own wording when it did not.
+  String _rateLimitMessage(RateLimitedException error) {
+    final availableAt = error.availableAt;
+    if (availableAt == null) return error.message;
+    final when = describeWhen(availableAt.toLocal(), ref.read(clockProvider)());
+    return "You've already sent a message in the last 24 hours. You can send again after $when.";
   }
 }
 

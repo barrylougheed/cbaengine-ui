@@ -213,6 +213,25 @@ void main() {
       expect(councils.first.id, 'fingal-county-council');
       expect(councils.first.name, 'Fingal County Council');
     });
+
+    test('reads how many areas and councillors each council has', () async {
+      when(() => httpClient.get(Uri.parse('http://localhost:8000/councils'))).thenAnswer(
+        (_) async => jsonResponse({
+          'councils': [
+            {'id': 'fingal-county-council', 'name': 'Fingal County Council', 'area_count': 7, 'councillor_count': 40},
+            // An older API that does not send counts: treated as "not known".
+            {'id': 'carlow-county-council', 'name': 'Carlow County Council'},
+          ],
+        }, 200),
+      );
+
+      final councils = await client.getCouncils();
+
+      expect(councils.first.areaCount, 7);
+      expect(councils.first.councillorCount, 40);
+      expect(councils.last.areaCount, 0);
+      expect(councils.last.councillorCount, 0);
+    });
   });
 
   group('getLeasForCouncil', () {
@@ -468,6 +487,43 @@ void main() {
       );
 
       expect(() => client.sendMessage('msg-1'), throwsA(isA<RateLimitedException>()));
+    });
+
+    test('a 429 carries when the sender can send again', () async {
+      token = 'the-token';
+      when(
+        () => httpClient.post(
+          Uri.parse('http://localhost:8000/messages/msg-1/send'),
+          headers: any(named: 'headers'),
+        ),
+      ).thenAnswer(
+        (_) async => jsonResponse({
+          'detail': "You've already sent a message today. Please try again tomorrow.",
+          'available_at': '2026-11-04T14:32:00+00:00',
+        }, 429),
+      );
+
+      await expectLater(
+        client.sendMessage('msg-1'),
+        throwsA(
+          isA<RateLimitedException>().having((e) => e.availableAt, 'availableAt', DateTime.utc(2026, 11, 4, 14, 32)),
+        ),
+      );
+    });
+
+    test('a 429 without a time (an older API) still throws, with no time', () async {
+      token = 'the-token';
+      when(
+        () => httpClient.post(
+          Uri.parse('http://localhost:8000/messages/msg-1/send'),
+          headers: any(named: 'headers'),
+        ),
+      ).thenAnswer((_) async => jsonResponse({'detail': 'Slow down.'}, 429));
+
+      await expectLater(
+        client.sendMessage('msg-1'),
+        throwsA(isA<RateLimitedException>().having((e) => e.availableAt, 'availableAt', isNull)),
+      );
     });
 
     test('a failed-send outcome is a normal 200 return, not an exception', () async {

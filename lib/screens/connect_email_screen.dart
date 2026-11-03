@@ -16,7 +16,7 @@ import '../widgets/loading_view.dart';
 import '../widgets/step_progress_indicator.dart';
 
 /// Step 5: triggers OAuth and hosts the post-connect auto-chain
-/// (create -> confirm -> send). Reached both from a fresh "Continue" tap
+/// (create -> confirm -> send). Reached both from a fresh "Connect email and send" tap
 /// on Review, and — on web only — from the app's own reboot after the
 /// OAuth provider redirects back here with a token in the URL fragment;
 /// on mobile the app process survives the round-trip, so that second
@@ -166,6 +166,8 @@ class _ConnectEmailScreenState extends ConsumerState<ConnectEmailScreen> {
                           children: [
                             if (_error != null) ...[ErrorBanner(message: _error!), const SizedBox(height: 16)],
                             const Text('Connect the email account you want to send from.'),
+                            const SizedBox(height: 16),
+                            const _WhatYouAreAgreeingTo(),
                             const SizedBox(height: 24),
                             FilledButton(
                               onPressed: () => _pickProviderAndConnect(context),
@@ -206,5 +208,53 @@ class _ConnectEmailScreenState extends ConsumerState<ConnectEmailScreen> {
     );
     if (provider == null || !mounted) return; // sheet dismissed without a choice
     await _connect(provider);
+  }
+}
+
+/// What connecting means, in plain words, before the resident is sent off to
+/// Google or Microsoft: the permission asked for is send-only, the message
+/// goes straight away (the Review step's "Connect email and send" was their go-ahead), and
+/// where the copy and any replies end up.
+class _WhatYouAreAgreeingTo extends StatelessWidget {
+  const _WhatYouAreAgreeingTo();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _point(
+              context,
+              Icons.lock_outline,
+              "We ask for permission to send email from your account, and nothing else. We can't read your messages or see your contacts.",
+            ),
+            _point(context, Icons.send_outlined, 'Your message is sent as soon as you connect.'),
+            _point(context, Icons.mark_email_read_outlined, 'You get a copy, and any replies come to your inbox.'),
+            _point(
+              context,
+              Icons.info_outline,
+              'Works with Google (Gmail) and Microsoft (Outlook, Hotmail) accounts.',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _point(BuildContext context, IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 12),
+          Expanded(child: Text(text)),
+        ],
+      ),
+    );
   }
 }

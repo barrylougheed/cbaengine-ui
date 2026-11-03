@@ -19,9 +19,20 @@ Council picker → LEA picker → Compose → Review → Connect email (OAuth)
   data, real recipient
   names and parties on Review (never an email address — that stays server-side until a draft actually
   exists).
+- The **home screen** says, before anyone starts, how many councillors and councils they can write to, how
+  it works in three steps, and that a Gmail, Outlook or Hotmail account is needed to send (so an iCloud or
+  Yahoo user does not find out at the last step).
 - The **Council picker** lists all 31 councils with an always-visible scrollbar and a **search box** (it
   ignores case and fadas, and matches every word typed, so "dun lao" finds Dún Laoghaire-Rathdown). A list
-  that merely scrolls gave no sign that there was more below the first ten.
+  that merely scrolls gave no sign that there was more below the first ten. It shows the total ("31
+  councils · 945 councillors", narrowing as you search) and, on each council, "7 areas · 40 councillors".
+- The **area picker** heads the list with the council's totals and shows, on each area, how many
+  councillors it has and who they are, so a resident can tell they picked the right area.
+- The **connect screen** says what connecting means before the resident is sent to Google or Microsoft:
+  send-only permission (it cannot read mail or contacts), the message is sent as soon as they connect, they
+  get a copy and replies come to their inbox, and which accounts work.
+- A **429** ("already sent today") says when they can send again, in their own time zone ("after 14:32
+  tomorrow"), using the `available_at` time the API returns.
 - **Compose** has a toggle, **Select a topic | Write your own** (default: select a topic).
   - *Select a topic*: tick one or more topics. The server writes a first draft (a random one of each
     topic's variants, kept while topics are ticked and un-ticked), which the resident can edit. Changing

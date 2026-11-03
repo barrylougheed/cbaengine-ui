@@ -138,6 +138,41 @@ void main() {
     expect((state() as MessageFlowFailed).failure, isA<RateLimitedFailure>());
   });
 
+  test('a 429 with a time tells the resident when they can send again, in their own time zone', () async {
+    final availableAt = DateTime(2026, 11, 4, 14, 32); // local time
+    container = ProviderContainer.test(
+      overrides: [
+        apiClientProvider.overrideWithValue(
+          ApiClient(
+            httpClient: httpClient,
+            baseUrl: 'http://localhost:8000',
+            getToken: () => 'the-token',
+            onUnauthorized: () {},
+          ),
+        ),
+        clockProvider.overrideWithValue(() => DateTime(2026, 11, 3, 17, 5)),
+      ],
+    );
+    stubCreate(jsonResponse(_messageJson(id: 'msg-1', status: 'draft_created'), 201));
+    stubPost('/messages/msg-1/confirm', jsonResponse(_messageJson(id: 'msg-1', status: 'awaiting_confirmation'), 200));
+    stubPost(
+      '/messages/msg-1/send',
+      jsonResponse({
+        'detail': "You've already sent a message today. Please try again tomorrow.",
+        'available_at': availableAt.toUtc().toIso8601String(),
+      }, 429),
+    );
+
+    await notifier().startFlow(localElectoralArea: 'fingal-balbriggan', topics: ['custom'], subject: 'Subject', body: 'Body', senderName: 'Sam Resident');
+
+    final failure = (state() as MessageFlowFailed).failure;
+    expect(failure, isA<RateLimitedFailure>());
+    expect(
+      failure.message,
+      "You've already sent a message in the last 24 hours. You can send again after 14:32 tomorrow.",
+    );
+  });
+
   test('any other ApiException maps to MessageFlowFailed(GenericFlowFailure)', () async {
     stubCreate(jsonResponse({'detail': 'Could not complete the email connection with the provider.'}, 502));
 

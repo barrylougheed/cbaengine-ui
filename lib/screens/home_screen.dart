@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../providers/reference_data/reference_data_providers.dart';
+import '../utils/counts.dart';
 import '../widgets/app_banner.dart';
 
 /// The app's true root — a menu of what CBAEngine can do, reached before
@@ -9,68 +12,126 @@ import '../widgets/app_banner.dart';
 /// (URLGeneration, see AGENTS.md) so the layout already has room for it
 /// once that feature is actually specified and built, rather than needing
 /// another restructure then.
-class HomeScreen extends StatelessWidget {
+///
+/// Below the cards it says, before anyone starts, how many councillors can be
+/// written to, how the flow works, and which email accounts can send (so an
+/// iCloud or Yahoo user does not find out at the last step).
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    // Loading or failing to load the councils only costs the total below.
+    final councils = ref.watch(councilsProvider).value ?? const [];
+    final totalCouncillors = councils.fold<int>(0, (sum, council) => sum + council.councillorCount);
+
+    return Scaffold(
+      appBar: AppBar(title: const AppBanner()),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // The content scrolls; the footer below stays put, so nothing has
+            // to be measured to keep it at the bottom.
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Hold yourself accountable for holding power accountable.',
+                      style: Theme.of(context).textTheme.titleMedium
+                          ?.copyWith(fontStyle: FontStyle.italic, color: colorScheme.primary),
+                    ),
+                    const SizedBox(height: 24),
+                    Text('What would you like to do?', style: Theme.of(context).textTheme.headlineSmall),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Pick an option below to get started.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                    ),
+                    const SizedBox(height: 24),
+                    _FeatureCard(
+                      icon: Icons.forum_outlined,
+                      title: 'Contact your councillors',
+                      subtitle: 'Draft and send a message to your local councillors.',
+                      onTap: () => context.push('/council'),
+                    ),
+                    const SizedBox(height: 12),
+                    const _FeatureCard(
+                      icon: Icons.link_outlined,
+                      title: 'Create a campaign link',
+                      subtitle: 'Share a pre-filled message for others to send.',
+                      badge: 'Coming soon',
+                      onTap: null,
+                    ),
+                    if (totalCouncillors > 0) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        'Write to any of ${countOf(totalCouncillors, 'councillor')} across ${countOf(councils.length, 'council')}.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    Text('How it works', style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 8),
+                    const _Step(number: 1, text: 'Choose your council and area.'),
+                    const _Step(
+                      number: 2,
+                      text: 'Pick a topic or write your own, then review your message and who it goes to.',
+                    ),
+                    const _Step(
+                      number: 3,
+                      text:
+                          'Connect your Gmail or Outlook account. Your message is sent straight away, from your own account, with a copy to you.',
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.info_outline, size: 18, color: colorScheme.primary),
+                        const SizedBox(width: 8),
+                        const Expanded(child: Text("You'll need a Gmail, Outlook or Hotmail account to send.")),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const _SocialLinks(),
+            TextButton(onPressed: () => context.push('/privacy'), child: const Text('Privacy notice')),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Step extends StatelessWidget {
+  const _Step({required this.number, required this.text});
+
+  final int number;
+  final String text;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(title: const AppBanner()),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) => SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: IntrinsicHeight(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Hold yourself accountable for holding power accountable.',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontStyle: FontStyle.italic, color: colorScheme.primary),
-                      ),
-                      const SizedBox(height: 24),
-                      Text('What would you like to do?', style: Theme.of(context).textTheme.headlineSmall),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Pick an option below to get started.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
-                      ),
-                      const SizedBox(height: 24),
-                      _FeatureCard(
-                        icon: Icons.forum_outlined,
-                        title: 'Contact your councillors',
-                        subtitle: 'Draft and send a message to your local councillors.',
-                        onTap: () => context.push('/council'),
-                      ),
-                      const SizedBox(height: 12),
-                      const _FeatureCard(
-                        icon: Icons.link_outlined,
-                        title: 'Create a campaign link',
-                        subtitle: 'Share a pre-filled message for others to send.',
-                        badge: 'Coming soon',
-                        onTap: null,
-                      ),
-                      const Spacer(),
-                      const Center(child: _SocialLinks()),
-                      Center(
-                        child: TextButton(
-                          onPressed: () => context.push('/privacy'),
-                          child: const Text('Privacy notice'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 11,
+            backgroundColor: colorScheme.primaryContainer,
+            foregroundColor: colorScheme.onPrimaryContainer,
+            child: Text('$number', style: Theme.of(context).textTheme.labelSmall),
           ),
-        ),
+          const SizedBox(width: 12),
+          Expanded(child: Text(text)),
+        ],
       ),
     );
   }

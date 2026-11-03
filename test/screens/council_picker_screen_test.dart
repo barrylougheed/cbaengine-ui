@@ -16,15 +16,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// scrollbar and a search box (a screen that merely scrolls gave no sign that
 /// there was more below the fold).
 void main() {
-  const names = [
-    'Carlow County Council',
-    'Dublin City Council',
-    'Dún Laoghaire-Rathdown County Council',
-    'Fingal County Council',
-    'Galway City Council',
-    'Galway County Council',
-    'Wicklow County Council',
-  ];
+  // name -> (areas, councillors)
+  const counts = {
+    'Carlow County Council': (3, 18),
+    'Dublin City Council': (11, 63),
+    'Dún Laoghaire-Rathdown County Council': (6, 40),
+    'Fingal County Council': (7, 40),
+    'Galway City Council': (3, 18),
+    'Galway County Council': (5, 39),
+    'Wicklow County Council': (6, 32),
+  };
+  final names = counts.keys.toList();
 
   late ProviderContainer container;
 
@@ -35,7 +37,13 @@ void main() {
     if (request.url.path == '/councils') {
       return jsonResponse({
         'councils': [
-          for (final name in names) {'id': name.toLowerCase().replaceAll(' ', '-'), 'name': name},
+          for (final entry in counts.entries)
+            {
+              'id': entry.key.toLowerCase().replaceAll(' ', '-'),
+              'name': entry.key,
+              'area_count': entry.value.$1,
+              'councillor_count': entry.value.$2,
+            },
         ],
       });
     }
@@ -116,5 +124,28 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(container.read(draftNotifierProvider).council?.name, 'Wicklow County Council');
+  });
+
+  testWidgets('says how many councils and councillors there are in all', (tester) async {
+    await openCouncilPicker(tester);
+
+    // 18 + 63 + 40 + 40 + 18 + 39 + 32 councillors in 7 councils.
+    expect(find.text('7 councils · 250 councillors'), findsOneWidget);
+  });
+
+  testWidgets('each council says how many areas and councillors it has', (tester) async {
+    await openCouncilPicker(tester);
+
+    expect(find.text('3 areas · 18 councillors'), findsNWidgets(2)); // Carlow and Galway City
+    expect(find.text('7 areas · 40 councillors'), findsOneWidget); // Fingal
+    expect(find.text('11 areas · 63 councillors'), findsOneWidget); // Dublin City
+  });
+
+  testWidgets('a search narrows the total to what is shown', (tester) async {
+    await openCouncilPicker(tester);
+
+    await search(tester, 'galway');
+
+    expect(find.text('2 councils · 57 councillors'), findsOneWidget);
   });
 }

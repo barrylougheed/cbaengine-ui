@@ -210,7 +210,10 @@ class ApiClient {
       case 409:
         return ConflictException(message);
       case 429:
-        return RateLimitedException(message);
+        final availableAt = decoded is Map && decoded['available_at'] is String
+            ? DateTime.tryParse(decoded['available_at'] as String)
+            : null;
+        return RateLimitedException(message, availableAt: availableAt);
       case 503:
         return ServiceUnavailableException(message);
       default:

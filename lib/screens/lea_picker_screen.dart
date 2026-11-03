@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../api/api_exceptions.dart';
 import '../providers/draft/draft_notifier.dart';
 import '../providers/reference_data/reference_data_providers.dart';
+import '../utils/counts.dart';
 import '../widgets/app_banner.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/loading_view.dart';
@@ -45,22 +46,55 @@ class LeaPickerScreen extends ConsumerWidget {
                           'Could not load areas for this council. Please check your connection and try again.',
                       onRetry: () => ref.invalidate(leasForCouncilProvider(councilId)),
                     ),
-              data: (leas) => ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                itemCount: leas.length,
-                itemBuilder: (context, index) {
-                  final lea = leas[index];
-                  return Card(
-                    child: ListTile(
-                      title: Text(lea.name),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () {
-                        ref.read(draftNotifierProvider.notifier).selectLea(lea);
-                        context.push('/compose');
+              data: (leas) => Column(
+                children: [
+                  if (leas.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '${leas.first.council} · ${countOf(leas.length, 'area')} · '
+                          '${countOf(leas.fold<int>(0, (sum, lea) => sum + lea.councillors.length), 'councillor')}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ),
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      itemCount: leas.length,
+                      itemBuilder: (context, index) {
+                        final lea = leas[index];
+                        return Card(
+                          child: ListTile(
+                            title: Text(lea.name),
+                            // Who they would be writing to, so they can tell
+                            // they picked the right area.
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(countOf(lea.councillors.length, 'councillor')),
+                                Text(
+                                  lea.councillors.map((councillor) => councillor.name).join(', '),
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () {
+                              ref.read(draftNotifierProvider.notifier).selectLea(lea);
+                              context.push('/compose');
+                            },
+                          ),
+                        );
                       },
                     ),
-                  );
-                },
+                  ),
+                ],
               ),
             ),
           ),
