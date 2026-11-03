@@ -26,6 +26,13 @@ Council picker → LEA picker → Compose → Review → Connect email (OAuth)
   ignores case and fadas, and matches every word typed, so "dun lao" finds Dún Laoghaire-Rathdown). A list
   that merely scrolls gave no sign that there was more below the first ten. It shows the total ("31
   councils · 945 councillors", narrowing as you search) and, on each council, "7 areas · 40 councillors".
+- **Find your area** (a card at the top of the council list, route `/find-area`): a resident who does not
+  know their council or area types a town, village or suburb and picks the area it is in; choosing one sets the
+  council and area and carries on to Compose. A place split across two areas shows both ("Pick the area your
+  address is in."); a name with many matches says "Showing 8 of 31 matches. Type more of the name to narrow it
+  down."; no match offers the council list instead. It searches after a short pause in typing, sends the text in
+  a POST body (never the URL), credits Tailte Éireann, and the privacy notice says the text is not stored or
+  logged. Eircodes and full addresses are not supported.
 - The **area picker** heads the list with the council's totals and shows, on each area, how many
   councillors it has and who they are, so a resident can tell they picked the right area.
 - The **connect screen** says what connecting means before the resident is sent to Google or Microsoft:

@@ -80,6 +80,19 @@ class _CouncilPickerScreenState extends ConsumerState<CouncilPickerScreen> {
                 final shown = _matching(councils);
                 return Column(
                   children: [
+                    // For a resident who does not know their council or area.
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      child: Card(
+                        child: ListTile(
+                          leading: Icon(Icons.place_outlined, color: Theme.of(context).colorScheme.primary),
+                          title: const Text('Not sure? Find your area'),
+                          subtitle: const Text('Enter your town, village or suburb'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => context.push('/find-area'),
+                        ),
+                      ),
+                    ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
                       child: TextField(

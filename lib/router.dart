@@ -8,6 +8,7 @@ import 'providers/draft/draft_notifier.dart';
 import 'screens/compose_screen.dart';
 import 'screens/connect_email_screen.dart';
 import 'screens/council_picker_screen.dart';
+import 'screens/find_area_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/lea_picker_screen.dart';
 import 'screens/privacy_screen.dart';
@@ -60,6 +61,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
       GoRoute(path: '/council', builder: (context, state) => const CouncilPickerScreen()),
+      GoRoute(path: '/find-area', builder: (context, state) => const FindAreaScreen()),
       GoRoute(
         path: '/council/:councilId/lea',
         builder: (context, state) => LeaPickerScreen(councilId: state.pathParameters['councilId']!),

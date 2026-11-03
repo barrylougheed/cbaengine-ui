@@ -234,6 +234,46 @@ void main() {
     });
   });
 
+  group('searchPlaces', () {
+    test('sends the text in the body (never the URL) and reads the areas back', () async {
+      when(
+        () => httpClient.post(Uri.parse('http://localhost:8000/places/search'), headers: any(named: 'headers'), body: any(named: 'body')),
+      ).thenAnswer(
+        (_) async => jsonResponse({
+          'results': [
+            {
+              'place': 'Swords',
+              'council_id': 'fingal-county-council',
+              'lea': {
+                'id': 'fingal-swords',
+                'name': 'Swords',
+                'council': 'Fingal County Council',
+                'councillors': [
+                  {'name': 'A Councillor', 'party': 'Independent'},
+                ],
+              },
+            },
+          ],
+          'total': 12,
+        }, 200),
+      );
+
+      final found = await client.searchPlaces('Swords');
+
+      expect(found.results.single.place, 'Swords');
+      expect(found.results.single.councilId, 'fingal-county-council');
+      expect(found.results.single.lea.id, 'fingal-swords');
+      expect(found.results.single.lea.councillors.single.name, 'A Councillor');
+      expect(found.total, 12);
+      expect(found.isCutShort, isTrue);
+      final sent = verify(
+        () => httpClient.post(captureAny(), headers: any(named: 'headers'), body: captureAny(named: 'body')),
+      ).captured;
+      expect((sent[0] as Uri).query, isEmpty);
+      expect(jsonDecode(sent[1] as String), {'query': 'Swords'});
+    });
+  });
+
   group('getLeasForCouncil', () {
     test('returns LEAs with councillor name/party previews on 200', () async {
       when(

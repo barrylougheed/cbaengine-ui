@@ -22,6 +22,14 @@ class PrivacyScreen extends StatelessWidget {
       ],
     ),
     (
+      'Finding your area',
+      [
+        'If you use "Find your area", the town, village or suburb you type is sent to our server to find '
+            'the matching area. It is not stored and not kept in our logs, and it is not shared. Please type '
+            'only a place name, not your full address.',
+      ],
+    ),
+    (
       'What happens when you send a message',
       [
         'Your message is sent from your own email account to each councillor for the area you chose, '

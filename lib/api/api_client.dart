@@ -12,6 +12,7 @@ import '../models/composed_topics.dart';
 import '../models/council.dart';
 import '../models/lea.dart';
 import '../models/message_record.dart';
+import '../models/place_match.dart';
 import '../models/topic_catalogue.dart';
 import 'api_exceptions.dart';
 
@@ -63,6 +64,13 @@ class ApiClient {
       jsonBody: jsonEncode({'local_electoral_area': localElectoralArea, 'topics': topics, 'variants': variants}),
     );
     return _decode(response, (json) => ComposedTopics.fromJson(json as Map<String, dynamic>));
+  }
+
+  /// The area(s) a town, village or suburb is in. The text goes in the body, not
+  /// the URL, so an address a resident types never reaches an access log.
+  Future<PlaceSearchResults> searchPlaces(String query) async {
+    final response = await _postPublic(_uri('/places/search'), jsonBody: jsonEncode({'query': query}));
+    return _decode(response, (json) => PlaceSearchResults.fromJson(json as Map<String, dynamic>));
   }
 
   Future<List<Council>> getCouncils() async {
