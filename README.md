@@ -19,6 +19,9 @@ Council picker → LEA picker → Compose → Review → Connect email (OAuth)
   data, real recipient
   names and parties on Review (never an email address — that stays server-side until a draft actually
   exists).
+- The **Council picker** lists all 31 councils with an always-visible scrollbar and a **search box** (it
+  ignores case and fadas, and matches every word typed, so "dun lao" finds Dún Laoghaire-Rathdown). A list
+  that merely scrolls gave no sign that there was more below the first ten.
 - **Compose** has a toggle, **Select a topic | Write your own** (default: select a topic).
   - *Select a topic*: tick one or more topics. The server writes a first draft (a random one of each
     topic's variants, kept while topics are ticked and un-ticked), which the resident can edit. Changing
