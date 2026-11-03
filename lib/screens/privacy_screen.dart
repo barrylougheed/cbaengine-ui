@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../config/app_config.dart';
 
 /// The privacy notice (GDPR Articles 12–14), linked from the home screen
-/// and from the consent line above Review's "Continue" button.
+/// and from the consent line above Review's "Connect email and send" button.
 ///
 /// Written to describe the service as it will run at go-live. A few
 /// statements depend on work still on CBA/TODO.md — deleting message text
@@ -22,10 +22,19 @@ class PrivacyScreen extends StatelessWidget {
       ],
     ),
     (
+      'Finding your area',
+      [
+        'If you use "Find your area", the town, village or suburb you type is sent to our server to find '
+            'the matching area. It is not stored and not kept in our logs, and it is not shared. Please type '
+            'only a place name, not your full address.',
+      ],
+    ),
+    (
       'What happens when you send a message',
       [
         'Your message is sent from your own email account to each councillor for the area you chose, '
-            'as a separate email to each one.',
+            'as a separate email to each one. Each starts with the councillor\'s name and ends with the name '
+            'you typed. If you started from a topic, the email says so at the end.',
         'You are copied on every email, and so is CBAEngine\'s monitoring mailbox. Councillors can see '
             'both addresses, and their replies go to both.',
         'We use the monitoring mailbox only to see whether and when councillors reply.',
@@ -34,10 +43,11 @@ class PrivacyScreen extends StatelessWidget {
     (
       'What we keep, and for how long',
       [
-        'Your email address, the area and topic you chose, which councillors were emailed, when, and '
+        'Your email address, the area and topics you chose, which councillors were emailed, when, and '
             'whether they replied: 400 days. After that we keep only anonymous totals, plus an archive copy '
             'without your message for 90 more days, which is then deleted.',
-        'The text of your message: deleted from our systems as soon as it has been sent. The subject line is '
+        'The text of your message and the name you sign it with: deleted from our systems as soon as it has '
+            'been sent. The subject line is '
             'kept a little longer, until our next check for replies (usually within a week), because it is '
             'used to recognise our copy of your email. Copies in the monitoring mailbox are deleted after '
             '60 days.',
@@ -49,7 +59,7 @@ class PrivacyScreen extends StatelessWidget {
       'Sensitive information',
       [
         'Messages about health, housing or other personal matters, and any political views you express, '
-            'can be sensitive. By pressing "Continue" before sending, you give your explicit consent for us '
+            'can be sensitive. By pressing "Connect email and send", you give your explicit consent for us '
             'to process your message to send it and to track replies. Please include only the personal '
             'detail you need to.',
       ],

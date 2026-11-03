@@ -4,10 +4,12 @@ import 'dart:convert';
 import 'package:app/app.dart';
 import 'package:app/models/council.dart';
 import 'package:app/models/councillor_preview.dart';
+import 'package:app/models/draft.dart';
 import 'package:app/models/lea.dart';
 import 'package:app/providers/core_providers.dart';
 import 'package:app/providers/draft/draft_notifier.dart';
 import 'package:app/router.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -15,6 +17,56 @@ import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  Future<ProviderContainer> openReview(WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final container = ProviderContainer.test(
+      retry: noAutomaticRetry,
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        httpClientProvider.overrideWithValue(
+          MockClient((request) async => http.Response(jsonEncode({'councils': <Object>[]}), 200)),
+        ),
+      ],
+    );
+    container.read(draftNotifierProvider.notifier)
+      ..selectCouncil(const Council(id: 'fingal-county-council', name: 'Fingal County Council'))
+      ..selectLea(
+        const Lea(
+          id: 'swords',
+          name: 'Swords',
+          council: 'Fingal County Council',
+          councillors: [CouncillorPreview(name: 'A Councillor', party: 'Independent')],
+        ),
+      )
+      ..setMode(ComposeMode.ownWords)
+      ..setSenderName('Sam Resident')
+      ..setSubject('Subject')
+      ..setBody('Body');
+    await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const CbaEngineApp()));
+    await tester.pumpAndSettle();
+    unawaited(container.read(routerProvider).push('/review'));
+    await tester.pumpAndSettle();
+    return container;
+  }
+
+  testWidgets('the button says that it connects and sends, and the consent line names it', (tester) async {
+    await openReview(tester);
+
+    expect(find.widgetWithText(FilledButton, 'Connect email and send'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Continue'), findsNothing);
+    expect(find.textContaining('By pressing "Connect email and send", you agree'), findsOneWidget);
+  });
+
+  testWidgets('pressing it goes to connecting the email', (tester) async {
+    await openReview(tester);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Connect email and send'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Connect the email account you want to send from.'), findsOneWidget);
+  });
+
   testWidgets('starting over from the review screen goes home without an error', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
@@ -38,7 +90,8 @@ void main() {
           councillors: [CouncillorPreview(name: 'A Councillor', party: 'Independent')],
         ),
       )
-      ..setTopic('housing')
+      ..setMode(ComposeMode.ownWords)
+      ..setSenderName('Sam Resident')
       ..setSubject('Subject')
       ..setBody('Body');
 

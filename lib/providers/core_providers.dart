@@ -11,6 +11,9 @@ import 'auth/auth_notifier.dart';
 
 final httpClientProvider = Provider<http.Client>((ref) => http.Client());
 
+/// The current time. A provider so tests can fix it.
+final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
+
 final apiClientProvider = Provider<ApiClient>((ref) {
   return ApiClient(
     httpClient: ref.watch(httpClientProvider),

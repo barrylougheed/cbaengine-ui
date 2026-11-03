@@ -20,25 +20,27 @@ class ReconnectScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const AppBanner()),
       body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Your email connection has expired. Please reconnect your email account.',
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: () {
-                  ref.read(authNotifierProvider.notifier).signOut();
-                  ref.read(draftNotifierProvider.notifier).clear();
-                  context.go('/');
-                },
-                child: const Text('Start again'),
-              ),
-            ],
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Your email connection has expired. Please reconnect your email account.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: () {
+                    ref.read(authNotifierProvider.notifier).signOut();
+                    ref.read(draftNotifierProvider.notifier).clear();
+                    context.go('/');
+                  },
+                  child: const Text('Start again'),
+                ),
+              ],
+            ),
           ),
         ),
       ),

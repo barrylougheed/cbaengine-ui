@@ -11,7 +11,7 @@ class MessageRecord extends Equatable {
     required this.id,
     required this.sender,
     required this.localElectoralArea,
-    required this.topic,
+    required this.topics,
     required this.subject,
     required this.body,
     required this.councillors,
@@ -27,7 +27,8 @@ class MessageRecord extends Equatable {
   final String id;
   final String sender;
   final String localElectoralArea;
-  final String topic;
+  /// Topic ids the email covered; ["custom"] for one the resident wrote.
+  final List<String> topics;
   final String subject;
   final String body;
   final List<Councillor> councillors;
@@ -44,7 +45,7 @@ class MessageRecord extends Equatable {
       id: json['id'] as String,
       sender: json['sender'] as String,
       localElectoralArea: json['local_electoral_area'] as String,
-      topic: json['topic'] as String,
+      topics: List<String>.from(json['topics'] as List<dynamic>),
       subject: json['subject'] as String,
       body: json['body'] as String,
       councillors: (json['councillors'] as List<dynamic>)
@@ -67,7 +68,7 @@ class MessageRecord extends Equatable {
     id,
     sender,
     localElectoralArea,
-    topic,
+    topics,
     subject,
     body,
     councillors,

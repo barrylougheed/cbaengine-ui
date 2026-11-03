@@ -1,7 +1,8 @@
 # cbaengine-ui
 
 The Flutter frontend for [CBAEngine](../CBA) — connect your email, pick your council and Local Electoral
-Area, draft a message, review who it'll reach, and send it through your own connected email account.
+Area, write a message (or start from one or more pre-defined topics), review who it'll reach, and send
+it through your own connected email account.
 Targets web, Android, and iOS from one codebase.
 
 ## Current state
@@ -14,15 +15,52 @@ Council picker → LEA picker → Compose → Review → Connect email (OAuth)
 ```
 
 - **Council picker, LEA picker, Compose, Review** are fully wired to the live backend (`GET /councils`,
-  `GET /councils/{id}/leas`, `GET /topics`) via Riverpod — real council/LEA/topic data, real recipient
+  `GET /councils/{id}/leas`, `GET /topics`, `POST /topics/compose`) via Riverpod — real council/LEA/topic
+  data, real recipient
   names and parties on Review (never an email address — that stays server-side until a draft actually
   exists).
+- The **home screen** says, before anyone starts, how many councillors and councils they can write to, how
+  it works in three steps, and that a Gmail, Outlook or Hotmail account is needed to send (so an iCloud or
+  Yahoo user does not find out at the last step).
+- The **Council picker** lists all 31 councils with an always-visible scrollbar and a **search box** (it
+  ignores case and fadas, and matches every word typed, so "dun lao" finds Dún Laoghaire-Rathdown). A list
+  that merely scrolls gave no sign that there was more below the first ten. It shows the total ("31
+  councils · 945 councillors", narrowing as you search) and, on each council, "7 areas · 40 councillors".
+- **Find your area** (a card at the top of the council list, route `/find-area`): a resident who does not
+  know their council or area types a town, village or suburb and picks the area it is in; choosing one sets the
+  council and area and carries on to Compose. A place split across two areas shows both ("Pick the area your
+  address is in."); a name with many matches says "Showing 8 of 31 matches. Type more of the name to narrow it
+  down."; no match offers the council list instead. It searches after a short pause in typing, sends the text in
+  a POST body (never the URL), credits Tailte Éireann, and the privacy notice says the text is not stored or
+  logged. Eircodes and full addresses are not supported.
+- The **area picker** heads the list with the council's totals and shows, on each area, how many
+  councillors it has and who they are, so a resident can tell they picked the right area.
+- The **connect screen** says what connecting means before the resident is sent to Google or Microsoft:
+  send-only permission (it cannot read mail or contacts), the message is sent as soon as they connect, they
+  get a copy and replies come to their inbox, and which accounts work.
+- A **429** ("already sent today") says when they can send again, in their own time zone ("after 14:32
+  tomorrow"), using the `available_at` time the API returns.
+- The **result screen**, for a sent message, says who it went to ("Sent to 6 councillors", each with their
+  party; never an email address) and where the copy and any replies go ("A copy has been sent to
+  you@example.com, and any replies will come to that inbox."). A message is only `sent` when every councillor
+  received it, so the list is exactly who it reached. A failed or partly delivered send still shows the API's
+  own explanation, with no list. It deliberately has no "share the app" prompt.
+- **Compose** has a toggle, **Select a topic | Write your own** (default: select a topic).
+  - *Select a topic*: tick one or more topics. The server writes a first draft (a random one of each
+    topic's variants, kept while topics are ticked and un-ticked), which the resident can edit. Changing
+    the topics, or switching mode, after editing asks "This replaces your edits. Continue?" first.
+  - *Write your own*: empty subject and message.
+  - Either way the resident types **Your name** (it signs off the email). The server adds "Dear
+    Councillor <name>," for each councillor and the sign-off around the text, plus a read-only footer for
+    topic-based emails; both are shown on Review.
+  - Text left in `[[double square brackets]]` is flagged and blocks Continue: it is a placeholder the
+    topic's author still has to fill in, and the API refuses it.
 - **Connect** triggers real OAuth (Google/Microsoft) via `GET /email/authorize` +
   `GET /email/callback`, using `client_redirect_uri` and the URL **fragment** (never the query string —
   matches the backend's own design) on both web and mobile. Once connected, it auto-chains
   create → confirm → send with no extra tap, straight to **Result**.
 - **API client, models, error handling, OAuth fragment parsing, draft storage, and the
-  auth/message-flow notifiers are all unit-tested** (`flutter test` — 66 tests as of this writing).
+  auth/message-flow notifiers are all unit-tested** (`flutter test`).
 - Router guards prevent skipping steps via a raw URL (e.g. visiting `/review` with no draft bounces back
   to `/compose` → `/council`), and any `401` from the backend routes to `/reconnect` from anywhere.
 - **Not yet done:** real on-device testing on Android/iOS (see "Prerequisites").
