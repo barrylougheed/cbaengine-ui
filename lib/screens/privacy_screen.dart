@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../config/app_config.dart';
 
 /// The privacy notice (GDPR Articles 12–14), linked from the home screen
-/// and from the consent line above Review's "Continue" button.
+/// and from the consent line above Review's "Connect email and send" button.
 ///
 /// Written to describe the service as it will run at go-live. A few
 /// statements depend on work still on CBA/TODO.md — deleting message text
@@ -51,7 +51,7 @@ class PrivacyScreen extends StatelessWidget {
       'Sensitive information',
       [
         'Messages about health, housing or other personal matters, and any political views you express, '
-            'can be sensitive. By pressing "Continue" before sending, you give your explicit consent for us '
+            'can be sensitive. By pressing "Connect email and send", you give your explicit consent for us '
             'to process your message to send it and to track replies. Please include only the personal '
             'detail you need to.',
       ],

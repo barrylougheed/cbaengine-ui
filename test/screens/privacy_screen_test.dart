@@ -21,6 +21,9 @@ void main() {
     expect(text, contains('monitoring mailbox'));
     expect(text, contains('400 days'));
     expect(text, contains('explicit consent'));
+    // The consent is given by pressing Review's button, so it names it.
+    expect(text, contains('Connect email and send'));
+    expect(text, isNot(contains('"Continue"')));
     expect(text, contains('publish'));
     expect(text, contains('Data Protection Commission'));
     expect(text, contains('16 and over'));

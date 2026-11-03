@@ -12,7 +12,7 @@ import '../widgets/step_progress_indicator.dart';
 /// entirely unauthenticated (councillor data comes straight from the
 /// LEA picker's own GET /councils/{id}/leas response, held in
 /// draftNotifier already; no email address is ever available here).
-/// "Continue" is the app's one explicit send confirmation — everything
+/// "Connect email and send" is the app's one explicit send confirmation — everything
 /// after it (OAuth, then create -> confirm -> send) auto-chains with no
 /// further tap.
 class ReviewScreen extends ConsumerWidget {
@@ -115,7 +115,7 @@ class ReviewScreen extends ConsumerWidget {
                 // sensitive information in the message — see PrivacyScreen.
                 Text(
                   'Your message will be sent from your email account to these councillors, with a copy to you '
-                  'and to CBAEngine so we can see whether they reply. By continuing, you agree to CBAEngine '
+                  'and to CBAEngine so we can see whether they reply. By pressing "Connect email and send", you agree to CBAEngine '
                   'processing your message, including any sensitive information in it.',
                   style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
                 ),
@@ -127,14 +127,17 @@ class ReviewScreen extends ConsumerWidget {
               ],
             ),
           ),
-          // Outside the scrolling list so Continue is always on screen.
+          // Outside the scrolling list so the button is always on screen.
           SafeArea(
             top: false,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               child: SizedBox(
                 width: double.infinity,
-                child: FilledButton(onPressed: () => context.push('/connect'), child: const Text('Continue')),
+                child: FilledButton(
+                  onPressed: () => context.push('/connect'),
+                  child: const Text('Connect email and send'),
+                ),
               ),
             ),
           ),
