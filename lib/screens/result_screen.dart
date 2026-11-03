@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../models/message_record.dart';
 import '../models/message_status.dart';
 import '../providers/draft/draft_notifier.dart';
 import '../providers/message_flow/message_flow_notifier.dart';
 import '../providers/message_flow/message_flow_state.dart';
+import '../utils/counts.dart';
 import '../widgets/app_banner.dart';
 
 // A considered green rather than Material's stock (fairly dated-looking)
@@ -52,6 +54,8 @@ class ResultScreen extends ConsumerWidget {
               const _AnimatedOutcomeIcon(icon: Icons.check_circle_outline, color: _successColor),
               const SizedBox(height: 16),
               Text('Your message was sent.', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 24),
+              _SentTo(record),
             ],
           ),
           MessageFlowResult(:final record) => Column(
@@ -88,6 +92,58 @@ class ResultScreen extends ConsumerWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// Who a sent message went to, and where the copy and any replies land.
+///
+/// A message is only ever `sent` when every councillor on the record received
+/// it (a partial delivery is `failed`, with the API's own explanation), so the
+/// record's councillors are exactly who it reached. Names and parties only:
+/// their email addresses are not shown to the resident (as on Review).
+class _SentTo extends StatelessWidget {
+  const _SentTo(this.record);
+
+  final MessageRecord record;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final mutedColor = Theme.of(context).colorScheme.onSurfaceVariant;
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 480),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (record.councillors.isNotEmpty) ...[
+            Text('Sent to ${countOf(record.councillors.length, 'councillor')}', style: textTheme.titleSmall),
+            const SizedBox(height: 8),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  for (final (index, councillor) in record.councillors.indexed) ...[
+                    if (index > 0) const Divider(height: 1, indent: 16, endIndent: 16),
+                    ListTile(
+                      leading: const Icon(Icons.check_circle, color: _successColor, size: 20),
+                      title: Text(councillor.name),
+                      subtitle: Text(councillor.party),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          Text(
+            'A copy has been sent to ${record.sender}, and any replies will come to that inbox.',
+            style: textTheme.bodyMedium?.copyWith(color: mutedColor),
+          ),
+        ],
+      ),
     );
   }
 }

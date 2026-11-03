@@ -33,6 +33,11 @@ Council picker → LEA picker → Compose → Review → Connect email (OAuth)
   get a copy and replies come to their inbox, and which accounts work.
 - A **429** ("already sent today") says when they can send again, in their own time zone ("after 14:32
   tomorrow"), using the `available_at` time the API returns.
+- The **result screen**, for a sent message, says who it went to ("Sent to 6 councillors", each with their
+  party; never an email address) and where the copy and any replies go ("A copy has been sent to
+  you@example.com, and any replies will come to that inbox."). A message is only `sent` when every councillor
+  received it, so the list is exactly who it reached. A failed or partly delivered send still shows the API's
+  own explanation, with no list. It deliberately has no "share the app" prompt.
 - **Compose** has a toggle, **Select a topic | Write your own** (default: select a topic).
   - *Select a topic*: tick one or more topics. The server writes a first draft (a random one of each
     topic's variants, kept while topics are ticked and un-ticked), which the resident can edit. Changing
