@@ -46,6 +46,9 @@ class PrivacyScreen extends StatelessWidget {
         'Your email address, the area and topics you chose, which councillors were emailed, when, and '
             'whether they replied: 400 days. After that we keep only anonymous totals, plus an archive copy '
             'without your message for 90 more days, which is then deleted.',
+        'We also count how many messages each email address has sent, to see how many people use CBAEngine '
+            'and how often. Only the CBAEngine team sees this count, it covers the same 400 days, and it is '
+            'not shared. It never includes what you wrote, your topics or which councillors you contacted.',
         'The text of your message and the name you sign it with: deleted from our systems as soon as it has '
             'been sent. The subject line is '
             'kept a little longer, until our next check for replies (usually within a week), because it is '

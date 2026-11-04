@@ -21,6 +21,9 @@ void main() {
     expect(text, contains('monitoring mailbox'));
     expect(text, contains('400 days'));
     expect(text, contains('explicit consent'));
+    // The usage report names senders, so the notice says what it holds and who sees it.
+    expect(text, contains('how many messages each email address has sent'));
+    expect(text, contains('the CBAEngine team sees this count'));
     // The place search sends what they type to the server: say what happens to it.
     expect(text, contains('Finding your area'));
     expect(text, contains('not stored'));

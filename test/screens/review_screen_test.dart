@@ -56,6 +56,8 @@ void main() {
     expect(find.widgetWithText(FilledButton, 'Connect email and send'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Continue'), findsNothing);
     expect(find.textContaining('By pressing "Connect email and send", you agree'), findsOneWidget);
+    // ...and the consent covers counting messages per email address.
+    expect(find.textContaining('how many messages each email address has sent'), findsOneWidget);
   });
 
   testWidgets('pressing it goes to connecting the email', (tester) async {

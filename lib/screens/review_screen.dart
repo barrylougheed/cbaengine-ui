@@ -115,7 +115,8 @@ class ReviewScreen extends ConsumerWidget {
                 // sensitive information in the message — see PrivacyScreen.
                 Text(
                   'Your message will be sent from your email account to these councillors, with a copy to you '
-                  'and to CBAEngine so we can see whether they reply. By pressing "Connect email and send", you agree to CBAEngine '
+                  'and to CBAEngine so we can see whether they reply. We also keep a count of how many messages each email address has sent, '
+                  'to see how the service is used. By pressing "Connect email and send", you agree to CBAEngine '
                   'processing your message, including any sensitive information in it.',
                   style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
                 ),
