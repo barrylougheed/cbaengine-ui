@@ -1,8 +1,8 @@
 # cbaengine-ui
 
-The Flutter frontend for [CBAEngine](../CBA) — connect your email, pick your council and Local Electoral
-Area, write a message (or start from one or more pre-defined topics), review who it'll reach, and send
-it through your own connected email account.
+The Flutter frontend for [CBAEngine](../CBA) — write an email (tick the proposals you support on the issues
+you care about, write your own, or back a campaign), pick your council and Local Electoral Area, review who
+it'll reach, and send it through your own connected email account.
 Targets web, Android, and iOS from one codebase.
 
 ## Current state
@@ -10,25 +10,47 @@ Targets web, Android, and iOS from one codebase.
 The full linear flow works end-to-end against the real backend:
 
 ```
-Council picker → LEA picker → Compose → Review → Connect email (OAuth)
+Home → Craft an email → Select issues / Write my own email   (or Campaigns → pick one)
+  → Council picker → LEA picker → Review → Connect email and send (OAuth)
   → auto-chain: create draft → confirm → send → Result
 ```
 
-- **Council picker, LEA picker, Compose, Review** are fully wired to the live backend (`GET /councils`,
-  `GET /councils/{id}/leas`, `GET /topics`, `POST /topics/compose`) via Riverpod — real council/LEA/topic
-  data, real recipient
-  names and parties on Review (never an email address — that stays server-side until a draft actually
-  exists).
-- The **home screen** says, before anyone starts, how many councillors and councils they can write to, how
-  it works in three steps, and that a Gmail, Outlook or Hotmail account is needed to send (so an iCloud or
-  Yahoo user does not find out at the last step).
+The email comes first, and the area after it, because the text never names the area. There are three kinds
+of email, one per email: about **issues**, in the resident's **own words**, or for a **campaign**.
+
+- **Everything up to Review is wired to the live backend** (`GET /topics`, `POST /topics/compose`,
+  `GET /campaigns`, `POST /campaigns/{id}/compose`, `GET /councils`, `GET /councils/{id}/leas`) via
+  Riverpod — real issues, proposals, campaigns, councils and areas, and real recipient names and parties on
+  Review (never an email address — that stays server-side until a draft actually exists).
+- The **home screen** has three cards: **Craft an email**, **Campaigns**, and a disabled **Create a
+  campaign link** (Feature 3, not built yet). It says up front that you can send one email a day, how many
+  councillors and councils they can write to, how it works in steps, and that a Gmail, Outlook or Hotmail
+  account is needed to send (so an iCloud or Yahoo user does not find out at the last step).
+- **Craft an email** offers two choices: **Select issues** and **Write my own email**.
+- **Select issues** (route `/craft/issues`): tick one or more issues, then tick the proposals you support on
+  each (at least one per issue). The server writes the email (an opening question for each issue, then
+  "Would you support ...?" for each ticked proposal) and it is shown for editing. The resident types
+  **Your name**, which signs off the email. An issue appears only once the owner has written its proposals;
+  with none available the screen says so and offers "Write my own email". A link on the screen,
+  "Disagree with these? Write your own email.", is how someone covers a view the proposals do not.
+  Changing the ticks after editing the text asks "This replaces your edits. Continue?" first.
+- **Write my own email** (route `/craft/own`): the subject and message are the resident's own, plus their
+  name. No footer is added.
+- **Campaigns** (routes `/campaigns`, `/campaigns/email`): the list of campaigns the owner has set up, each
+  with its summary and an optional "Learn more" link. Choosing one shows the email the server wrote for it
+  (editable), then the name. Only campaigns that are finished are listed.
+- On every one of these the server adds "Dear Councillor <name>," for each councillor and the sign-off
+  around the text, and a read-only footer for issue and campaign emails (a campaign's footer names it);
+  all of it is shown on Review.
+- Text left in `[[double square brackets]]` is flagged and blocks Continue: it is a placeholder the
+  author of the content still has to fill in, and the API refuses it.
 - The **Council picker** lists all 31 councils with an always-visible scrollbar and a **search box** (it
   ignores case and fadas, and matches every word typed, so "dun lao" finds Dún Laoghaire-Rathdown). A list
   that merely scrolls gave no sign that there was more below the first ten. It shows the total ("31
   councils · 945 councillors", narrowing as you search) and, on each council, "7 areas · 40 councillors".
 - **Find your area** (a card at the top of the council list, route `/find-area`): a resident who does not
   know their council or area types a town, village or suburb and picks the area it is in; choosing one sets the
-  council and area and carries on to Compose. A place split across two areas shows both ("Pick the area your
+  council and area and carries on to Review. A place split across two areas shows both ("Pick the area your
   address is in."); a name with many matches says "Showing 8 of 31 matches. Type more of the name to narrow it
   down."; no match offers the council list instead. It searches after a short pause in typing, sends the text in
   a POST body (never the URL), credits Tailte Éireann, and the privacy notice says the text is not stored or
@@ -45,24 +67,16 @@ Council picker → LEA picker → Compose → Review → Connect email (OAuth)
   you@example.com, and any replies will come to that inbox."). A message is only `sent` when every councillor
   received it, so the list is exactly who it reached. A failed or partly delivered send still shows the API's
   own explanation, with no list. It deliberately has no "share the app" prompt.
-- **Compose** has a toggle, **Select a topic | Write your own** (default: select a topic).
-  - *Select a topic*: tick one or more topics. The server writes a first draft (a random one of each
-    topic's variants, kept while topics are ticked and un-ticked), which the resident can edit. Changing
-    the topics, or switching mode, after editing asks "This replaces your edits. Continue?" first.
-  - *Write your own*: empty subject and message.
-  - Either way the resident types **Your name** (it signs off the email). The server adds "Dear
-    Councillor <name>," for each councillor and the sign-off around the text, plus a read-only footer for
-    topic-based emails; both are shown on Review.
-  - Text left in `[[double square brackets]]` is flagged and blocks Continue: it is a placeholder the
-    topic's author still has to fill in, and the API refuses it.
 - **Connect** triggers real OAuth (Google/Microsoft) via `GET /email/authorize` +
   `GET /email/callback`, using `client_redirect_uri` and the URL **fragment** (never the query string —
   matches the backend's own design) on both web and mobile. Once connected, it auto-chains
   create → confirm → send with no extra tap, straight to **Result**.
 - **API client, models, error handling, OAuth fragment parsing, draft storage, and the
   auth/message-flow notifiers are all unit-tested** (`flutter test`).
-- Router guards prevent skipping steps via a raw URL (e.g. visiting `/review` with no draft bounces back
-  to `/compose` → `/council`), and any `401` from the backend routes to `/reconnect` from anywhere.
+- Router guards prevent skipping steps via a raw URL: the council, area and Review screens need a finished
+  email first (a raw `/review` with no email bounces back to Home, and with an email but no area to the
+  council list), `/craft/own` and `/craft/issues` need the matching choice, and `/campaigns/email` needs a
+  campaign chosen. Any `401` from the backend routes to `/reconnect` from anywhere.
 - **Not yet done:** real on-device testing on Android/iOS (see "Prerequisites").
 
 ## Decided against: session persistence across app restarts
@@ -76,7 +90,7 @@ to test):
   Persisting the token only helps within that same hour — reopen the app later than that and the restored
   token is dead on arrival, forcing a reconnect anyway. Persistence can't extend the useful window past
   what the provider already imposes.
-- **The whole flow — pick council/LEA, compose, review, connect, send — takes a few minutes in one
+- **The whole flow — write, pick council/LEA, review, connect, send — takes a few minutes in one
   sitting.** With 99.9% backend availability, there's no legitimate "come back later mid-flow" case; the
   only scenario persistence helps is an *accidental* interruption (app killed, a call comes in) within
   that same short, already-narrow hour-long window.
@@ -198,7 +212,7 @@ python scripts/seed_manual_test_lea.py
 The fixture (`manual-test-recipient`) is deliberately excluded from `GET /leas` and
 `GET /councils/{id}/leas` (same as the backend's own listings), so the normal picker can never reach it —
 but `POST /messages` accepts it directly, so the rest of the flow works identically to a real send. A
-debug-only button on the Council picker screen, **"Use test recipient (dev)"**, skips straight to Compose
+debug-only button on the Council picker screen, **"Use test recipient (dev)"**, skips straight to Review
 with this fixture selected — visible only in debug builds (`kDebugMode`), never in a release build. Use
 it to exercise a real, delivery-confirmed send (and the 429/failure paths) entirely through the app.
 
