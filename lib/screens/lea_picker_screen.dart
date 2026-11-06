@@ -29,7 +29,7 @@ class LeaPickerScreen extends ConsumerWidget {
       appBar: AppBar(title: const AppBanner()),
       body: Column(
         children: [
-          const StepProgressIndicator(currentStep: 2, totalSteps: 5, label: 'Select your area'),
+          const StepProgressIndicator(currentStep: 3, totalSteps: 5, label: 'Select your area'),
           Expanded(
             child: leasAsync.when(
               loading: () => const LoadingView(),
@@ -87,7 +87,7 @@ class LeaPickerScreen extends ConsumerWidget {
                             trailing: const Icon(Icons.chevron_right),
                             onTap: () {
                               ref.read(draftNotifierProvider.notifier).selectLea(lea);
-                              context.push('/compose');
+                              context.push('/review');
                             },
                           ),
                         );

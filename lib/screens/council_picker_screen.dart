@@ -68,7 +68,7 @@ class _CouncilPickerScreenState extends ConsumerState<CouncilPickerScreen> {
       appBar: AppBar(title: const AppBanner()),
       body: Column(
         children: [
-          const StepProgressIndicator(currentStep: 1, totalSteps: 5, label: 'Select your council'),
+          const StepProgressIndicator(currentStep: 2, totalSteps: 5, label: 'Select your council'),
           Expanded(
             child: councilsAsync.when(
               loading: () => const LoadingView(),
@@ -182,7 +182,7 @@ class _CouncilPickerScreenState extends ConsumerState<CouncilPickerScreen> {
                 child: TextButton(
                   onPressed: () {
                     ref.read(draftNotifierProvider.notifier).selectTestRecipient();
-                    context.push('/compose');
+                    context.push('/review');
                   },
                   child: const Text('Use test recipient (dev)'),
                 ),

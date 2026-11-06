@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_exceptions.dart';
+import '../../models/campaign_summary.dart';
 import '../../models/council.dart';
 import '../../models/councillor_preview.dart';
 import '../../models/draft.dart';
 import '../../models/lea.dart';
+import '../../models/message_intent.dart';
 import '../../models/topic_summary.dart';
 import '../core_providers.dart';
 
@@ -27,8 +29,8 @@ const _testRecipientLea = Lea(
 );
 
 class DraftNotifier extends Notifier<Draft> {
-  /// Numbers each request for topic text, so a slow answer to an earlier
-  /// tick can never overwrite the answer to a later one.
+  /// Numbers each request for text, so a slow answer to an earlier choice can
+  /// never overwrite the answer to a later one (or to a change of the kind of email).
   int _latestComposeRequest = 0;
 
   @override
@@ -48,42 +50,42 @@ class DraftNotifier extends Notifier<Draft> {
     state = state.copyWith(lea: _testRecipientLea);
   }
 
-  /// Switches between starting from topics and writing everything yourself.
-  /// The text belongs to the old mode, so it is cleared (the screen asks
-  /// first when the resident has edited it).
-  void setMode(ComposeMode mode) {
-    if (mode == state.mode) return;
-    _latestComposeRequest++; // an answer still on its way is for the old mode
-    state = _withoutText(state).copyWith(mode: mode);
+  /// Switches between an email about issues, one the resident writes, and one
+  /// backing a campaign. What was chosen and written belongs to the old kind,
+  /// so it is cleared (the screen asks first when the resident has edited the
+  /// text). The name, council and area stay.
+  void setIntent(MessageIntent intent) {
+    if (intent == state.intent) return;
+    _latestComposeRequest++; // an answer still on its way is for the old kind
+    state = _withoutContent(state).copyWith(intent: intent);
   }
 
-  /// Fills the subject, body and footer from the server for exactly the
-  /// topics in [chosen] (replacing whatever text there was). Topics already
-  /// composed this session keep their variant; the others get a random one.
+  /// Sets the chosen [chosen] issues and the proposals [ticked] for each
+  /// (issue id -> proposal ids). Once every chosen issue has a proposal ticked,
+  /// fills the subject, body and footer from the server (replacing whatever
+  /// text there was); until then there is no text. Wording already shown for an
+  /// issue is kept, so ticking and un-ticking never re-rolls it.
   /// Returns null on success, or a message to show the resident.
-  Future<String?> chooseTopics(List<TopicSummary> chosen) async {
+  Future<String?> chooseIssues(List<TopicSummary> chosen, Map<String, List<String>> ticked) async {
     final request = ++_latestComposeRequest;
-    if (chosen.isEmpty) {
-      state = _withoutText(state);
+    final cleanTicked = {for (final issue in chosen) issue.id: ticked[issue.id] ?? const <String>[]};
+    final complete = chosen.isNotEmpty && chosen.every((issue) => cleanTicked[issue.id]!.isNotEmpty);
+    if (!complete) {
+      state = _withoutText(state).copyWith(issues: chosen, ticked: cleanTicked);
       return null;
     }
-    final lea = state.lea;
-    if (lea == null) return 'Choose your area first.';
 
     try {
       final composed = await ref
           .read(apiClientProvider)
-          .composeTopics(
-            localElectoralArea: lea.id,
-            topics: [for (final topic in chosen) topic.id],
-            variants: state.templateVariants,
-          );
+          .composeTopics(selection: cleanTicked, variants: state.templateVariants);
       if (request != _latestComposeRequest) return null; // superseded by a later choice
 
-      final byId = {for (final topic in chosen) topic.id: topic};
+      final byId = {for (final issue in chosen) issue.id: issue};
       state = state.copyWith(
-        topics: [for (final id in composed.topics) byId[id]!],
-        // Remember every variant, so un-ticking and re-ticking a topic does not re-roll it.
+        issues: [for (final id in composed.topics) byId[id]!],
+        ticked: cleanTicked,
+        // Remember all the wording, so un-ticking and re-ticking an issue does not re-roll it.
         templateVariants: {...state.templateVariants, ...composed.variants},
         footer: composed.footer,
         subject: composed.subject,
@@ -95,7 +97,38 @@ class DraftNotifier extends Notifier<Draft> {
       return null;
     } on NetworkException {
       if (request != _latestComposeRequest) return null;
-      return 'Could not load the text for these topics. Please check your connection and try again.';
+      return 'Could not load the text for these issues. Please check your connection and try again.';
+    } on ApiException catch (e) {
+      if (request != _latestComposeRequest) return null;
+      return e.message;
+    }
+  }
+
+  /// Chooses [campaign] and fills the subject, body and footer from the server
+  /// (replacing whatever text there was). A variant already shown for it is
+  /// kept. Returns null on success, or a message to show the resident.
+  Future<String?> chooseCampaign(CampaignSummary campaign) async {
+    final request = ++_latestComposeRequest;
+    try {
+      final composed = await ref
+          .read(apiClientProvider)
+          .composeCampaign(campaignId: campaign.id, variants: state.templateVariants);
+      if (request != _latestComposeRequest) return null;
+
+      state = state.copyWith(
+        campaign: campaign,
+        templateVariants: {...state.templateVariants, ...composed.variants},
+        footer: composed.footer,
+        subject: composed.subject,
+        body: composed.body,
+        composedSubject: composed.subject,
+        composedBody: composed.body,
+        revision: state.revision + 1,
+      );
+      return null;
+    } on NetworkException {
+      if (request != _latestComposeRequest) return null;
+      return 'Could not load the text for this campaign. Please check your connection and try again.';
     } on ApiException catch (e) {
       if (request != _latestComposeRequest) return null;
       return e.message;
@@ -114,16 +147,25 @@ class DraftNotifier extends Notifier<Draft> {
     state = state.copyWith(body: body);
   }
 
-  /// No topics, no text, no footer: the compose form as it is before anything is chosen.
+  /// No text and no footer: what the form shows before there is anything to write.
   Draft _withoutText(Draft draft) {
     return draft.copyWith(
-      topics: const [],
       clearFooter: true,
       subject: '',
       body: '',
       composedSubject: '',
       composedBody: '',
       revision: draft.revision + 1,
+    );
+  }
+
+  /// Nothing chosen and no text: the start of any kind of email.
+  Draft _withoutContent(Draft draft) {
+    return _withoutText(draft).copyWith(
+      issues: const [],
+      ticked: const {},
+      clearCampaign: true,
+      templateVariants: const {},
     );
   }
 

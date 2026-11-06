@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:app/app.dart';
+import 'package:app/models/message_intent.dart';
+import 'package:app/providers/draft/draft_notifier.dart';
 import 'package:app/providers/core_providers.dart';
 import 'package:app/router.dart';
 import 'package:flutter/material.dart';
@@ -95,6 +97,12 @@ void main() {
         httpClientProvider.overrideWithValue(MockClient(handle)),
       ],
     );
+    // The council and area come after the email, so there has to be one.
+    container.read(draftNotifierProvider.notifier)
+      ..setIntent(MessageIntent.own)
+      ..setSenderName('Sam Resident')
+      ..setSubject('Subject')
+      ..setBody('Body');
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
@@ -115,10 +123,10 @@ void main() {
       await open(tester);
 
       expect(find.text('How it works'), findsOneWidget);
-      expect(find.text('Choose your council and area.'), findsOneWidget);
+      expect(find.text('Craft an email, or back a campaign.'), findsOneWidget);
       expect(
         find.text(
-          'Pick a topic or write your own, then review your message and who it goes to.',
+          'Choose your council and area, then review your message and who it goes to.',
         ),
         findsOneWidget,
       );

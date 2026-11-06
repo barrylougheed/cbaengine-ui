@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:app/api/api_client.dart';
 import 'package:app/api/api_exceptions.dart';
+import 'package:app/models/message_intent.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
@@ -98,12 +99,26 @@ void main() {
   });
 
   group('getTopics', () {
-    test('returns the topics with their titles, and the email layout, on 200', () async {
+    test('returns the issues with their titles and proposals, and the email layout, on 200', () async {
       when(() => httpClient.get(Uri.parse('http://localhost:8000/topics'))).thenAnswer(
         (_) async => jsonResponse({
           'topics': [
-            {'id': 'housing-crisis', 'title': 'Housing Crisis'},
-            {'id': 'save-stephens-green', 'title': "Save Stephen's Green"},
+            {
+              'id': 'housing-crisis',
+              'title': 'Housing Crisis',
+              'proposals': [
+                {'id': 'ban-bulk-purchases', 'text': 'a ban on vulture funds bulk purchasing properties'},
+                {'id': 'public-register', 'text': 'a public register to monitor house bidding'},
+              ],
+            },
+            {
+              'id': 'triple-lock',
+              'title': 'Triple Lock',
+              'proposals': [
+                {'id': 'keep-it', 'text': 'keeping the triple lock'},
+                {'id': 'review-it', 'text': 'a review of the triple lock'},
+              ],
+            },
           ],
           'email_layout': {'greeting_format': 'Dear Councillor {name},', 'sign_off': 'Kind regards,'},
         }, 200),
@@ -111,19 +126,32 @@ void main() {
 
       final catalogue = await client.getTopics();
 
-      expect(catalogue.topics.map((t) => t.id), ['housing-crisis', 'save-stephens-green']);
-      expect(catalogue.topics.map((t) => t.title), ['Housing Crisis', "Save Stephen's Green"]);
+      expect(catalogue.topics.map((t) => t.id), ['housing-crisis', 'triple-lock']);
+      expect(catalogue.topics.map((t) => t.title), ['Housing Crisis', 'Triple Lock']);
+      expect(catalogue.topics.first.proposals.map((p) => p.id), ['ban-bulk-purchases', 'public-register']);
+      expect(catalogue.topics.first.proposals.first.text, 'a ban on vulture funds bulk purchasing properties');
       expect(catalogue.emailLayout.greetingFor('Conor Dowling'), 'Dear Councillor Conor Dowling,');
       expect(catalogue.emailLayout.signOff, 'Kind regards,');
+    });
+
+    test('an empty list means there are no issues ready yet', () async {
+      when(() => httpClient.get(Uri.parse('http://localhost:8000/topics'))).thenAnswer(
+        (_) async => jsonResponse({
+          'topics': <Object>[],
+          'email_layout': {'greeting_format': 'Dear Councillor {name},', 'sign_off': 'Kind regards,'},
+        }, 200),
+      );
+
+      expect((await client.getTopics()).topics, isEmpty);
     });
   });
 
   group('composeTopics', () {
     const composedJson = {
-      'topics': ['housing-crisis', 'save-stephens-green'],
-      'variants': {'housing-crisis': 'v3', 'save-stephens-green': 'v1'},
-      'subject': "Your stance on Housing Crisis and Save Stephen's Green",
-      'body': 'Housing Crisis\nSome text.',
+      'topics': ['housing-crisis', 'triple-lock'],
+      'variants': {'housing-crisis': 'view', 'triple-lock': 'doing', '_subject': 'stand'},
+      'subject': 'Where do you stand on Housing Crisis and Triple Lock?',
+      'body': 'Housing Crisis\nWhat is your view on Housing Crisis?',
       'footer': 'Started from a CBA topic template.',
     };
 
@@ -137,18 +165,20 @@ void main() {
       ).thenAnswer((_) async => response);
     }
 
-    test('needs no sign-in: posts the area, topics and pinned variants with no Authorization header', () async {
+    test('needs no sign-in or area: posts the ticked proposals and pinned wording with no Authorization header', () async {
       stubCompose(jsonResponse(composedJson, 200));
 
       final composed = await client.composeTopics(
-        localElectoralArea: 'fingal-balbriggan',
-        topics: ['housing-crisis', 'save-stephens-green'],
-        variants: {'housing-crisis': 'v3'},
+        selection: {
+          'housing-crisis': ['ban-bulk-purchases', 'public-register'],
+          'triple-lock': ['keep-it'],
+        },
+        variants: {'housing-crisis': 'view'},
       );
 
-      expect(composed.topics, ['housing-crisis', 'save-stephens-green']);
-      expect(composed.variants, {'housing-crisis': 'v3', 'save-stephens-green': 'v1'});
-      expect(composed.subject, startsWith('Your stance on'));
+      expect(composed.topics, ['housing-crisis', 'triple-lock']);
+      expect(composed.variants, {'housing-crisis': 'view', 'triple-lock': 'doing', '_subject': 'stand'});
+      expect(composed.subject, startsWith('Where do you stand on'));
       expect(composed.footer, 'Started from a CBA topic template.');
       final captured = verify(
         () => httpClient.post(
@@ -159,26 +189,34 @@ void main() {
       ).captured;
       expect((captured[0] as Map).containsKey('Authorization'), isFalse);
       expect(jsonDecode(captured[1] as String), {
-        'local_electoral_area': 'fingal-balbriggan',
-        'topics': ['housing-crisis', 'save-stephens-green'],
-        'variants': {'housing-crisis': 'v3'},
+        'topics': [
+          {
+            'id': 'housing-crisis',
+            'proposals': ['ban-bulk-purchases', 'public-register'],
+          },
+          {
+            'id': 'triple-lock',
+            'proposals': ['keep-it'],
+          },
+        ],
+        'variants': {'housing-crisis': 'view'},
       });
     });
 
-    test('throws NotFoundException on 404 (unknown area or topic)', () async {
+    test('throws NotFoundException on 404 (an issue that is not available)', () async {
       stubCompose(jsonResponse({'detail': 'Topic not found.'}, 404));
 
       expect(
-        () => client.composeTopics(localElectoralArea: 'fingal-balbriggan', topics: ['nope']),
+        () => client.composeTopics(selection: {'nope': ['x']}),
         throwsA(isA<NotFoundException>()),
       );
     });
 
-    test('keeps the server\'s message when too many topics were chosen (422 with a plain detail)', () async {
+    test('keeps the server\'s message when too many issues were chosen (422 with a plain detail)', () async {
       stubCompose(jsonResponse({'detail': 'Too many topics for one email. Please choose fewer.'}, 422));
 
       await expectLater(
-        client.composeTopics(localElectoralArea: 'fingal-balbriggan', topics: ['a', 'b']),
+        client.composeTopics(selection: {'a': ['x'], 'b': ['y']}),
         throwsA(
           isA<ApiException>().having((e) => e.message, 'message', 'Too many topics for one email. Please choose fewer.'),
         ),
@@ -191,9 +229,91 @@ void main() {
       ).thenThrow(Exception('offline'));
 
       expect(
-        () => client.composeTopics(localElectoralArea: 'fingal-balbriggan', topics: ['housing-crisis']),
+        () => client.composeTopics(selection: {'housing-crisis': ['ban-bulk-purchases']}),
         throwsA(isA<NetworkException>()),
       );
+    });
+  });
+
+  group('getCampaigns', () {
+    test('returns each campaign with its summary and optional link, on 200, with no sign-in', () async {
+      when(() => httpClient.get(Uri.parse('http://localhost:8000/campaigns'))).thenAnswer(
+        (_) async => jsonResponse({
+          'campaigns': [
+            {
+              'id': 'save-stephens-green',
+              'title': "Save Stephen's Green",
+              'summary': 'A short summary.',
+              'link': 'https://example.org/green',
+            },
+            {'id': 'give-us-the-night', 'title': 'Give us the night', 'summary': 'Another one.', 'link': null},
+          ],
+        }, 200),
+      );
+
+      final campaigns = await client.getCampaigns();
+
+      expect(campaigns.map((c) => c.id), ['save-stephens-green', 'give-us-the-night']);
+      expect(campaigns.first.title, "Save Stephen's Green");
+      expect(campaigns.first.summary, 'A short summary.');
+      expect(campaigns.first.link, 'https://example.org/green');
+      expect(campaigns.last.link, isNull);
+    });
+
+    test('an empty list means no campaigns are open yet', () async {
+      when(() => httpClient.get(Uri.parse('http://localhost:8000/campaigns'))).thenAnswer(
+        (_) async => jsonResponse({'campaigns': <Object>[]}, 200),
+      );
+
+      expect(await client.getCampaigns(), isEmpty);
+    });
+  });
+
+  group('composeCampaign', () {
+    const composedJson = {
+      'topics': ['save-stephens-green'],
+      'variants': {'save-stephens-green': 'v2'},
+      'subject': 'Your position on saving Stephen\'s Green',
+      'body': 'Some text.',
+      'footer': "Sent as part of the 'Save Stephen's Green' campaign via CBAEngine.",
+    };
+
+    test('posts the pinned variant to the campaign\'s own address with no Authorization header', () async {
+      when(
+        () => httpClient.post(
+          Uri.parse('http://localhost:8000/campaigns/save-stephens-green/compose'),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        ),
+      ).thenAnswer((_) async => jsonResponse(composedJson, 200));
+
+      final composed = await client.composeCampaign(
+        campaignId: 'save-stephens-green',
+        variants: {'save-stephens-green': 'v2'},
+      );
+
+      expect(composed.topics, ['save-stephens-green']);
+      expect(composed.variants, {'save-stephens-green': 'v2'});
+      expect(composed.footer, contains("Save Stephen's Green"));
+      final captured = verify(
+        () => httpClient.post(
+          Uri.parse('http://localhost:8000/campaigns/save-stephens-green/compose'),
+          headers: captureAny(named: 'headers'),
+          body: captureAny(named: 'body'),
+        ),
+      ).captured;
+      expect((captured[0] as Map).containsKey('Authorization'), isFalse);
+      expect(jsonDecode(captured[1] as String), {
+        'variants': {'save-stephens-green': 'v2'},
+      });
+    });
+
+    test('throws NotFoundException on 404 (a campaign that is not open)', () async {
+      when(
+        () => httpClient.post(any(), headers: any(named: 'headers'), body: any(named: 'body')),
+      ).thenAnswer((_) async => jsonResponse({'detail': 'Campaign not found.'}, 404));
+
+      expect(() => client.composeCampaign(campaignId: 'nope'), throwsA(isA<NotFoundException>()));
     });
   });
 
@@ -329,6 +449,7 @@ void main() {
       expect(
         () => client.createMessage(
           localElectoralArea: 'fingal-balbriggan',
+          intent: MessageIntent.own,
           topics: ['custom'],
           subject: 'Subject',
           body: 'Body',
@@ -351,6 +472,7 @@ void main() {
 
       final record = await client.createMessage(
         localElectoralArea: 'fingal-balbriggan',
+        intent: MessageIntent.own,
         topics: ['custom'],
         subject: 'Subject',
         body: 'Body',
@@ -368,7 +490,7 @@ void main() {
       expect((captured.single as Map)['Authorization'], 'Bearer the-token');
     });
 
-    test('sends the topics, the variants shown and the name for the sign-off', () async {
+    test('sends the intent, the issues, the ticked proposals, the wording shown and the name', () async {
       token = 'the-token';
       when(
         () => httpClient.post(
@@ -380,11 +502,16 @@ void main() {
 
       await client.createMessage(
         localElectoralArea: 'fingal-balbriggan',
-        topics: ['housing-crisis', 'save-stephens-green'],
+        intent: MessageIntent.issues,
+        topics: ['housing-crisis', 'triple-lock'],
+        proposals: {
+          'housing-crisis': ['ban-bulk-purchases'],
+          'triple-lock': ['keep-it', 'review-it'],
+        },
         subject: 'Subject',
         body: 'Body',
         senderName: 'Sam Resident',
-        templateVariants: {'housing-crisis': 'v3', 'save-stephens-green': 'v1'},
+        templateVariants: {'housing-crisis': 'view', 'triple-lock': 'doing', '_subject': 'stand'},
       );
 
       final captured = verify(
@@ -396,12 +523,60 @@ void main() {
       ).captured;
       expect(jsonDecode(captured.single as String), {
         'local_electoral_area': 'fingal-balbriggan',
-        'topics': ['housing-crisis', 'save-stephens-green'],
-        'template_variants': {'housing-crisis': 'v3', 'save-stephens-green': 'v1'},
+        'intent': 'issues',
+        'topics': ['housing-crisis', 'triple-lock'],
+        'proposals': {
+          'housing-crisis': ['ban-bulk-purchases'],
+          'triple-lock': ['keep-it', 'review-it'],
+        },
+        'template_variants': {'housing-crisis': 'view', 'triple-lock': 'doing', '_subject': 'stand'},
         'subject': 'Subject',
         'body': 'Body',
         'sender_name': 'Sam Resident',
       });
+    });
+
+    test('names the intent for an email the resident wrote and for a campaign email', () async {
+      token = 'the-token';
+      when(
+        () => httpClient.post(
+          Uri.parse('http://localhost:8000/messages'),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        ),
+      ).thenAnswer((_) async => jsonResponse(messageJson, 201));
+
+      await client.createMessage(
+        localElectoralArea: 'fingal-balbriggan',
+        intent: MessageIntent.own,
+        topics: ['custom'],
+        subject: 'Subject',
+        body: 'Body',
+        senderName: 'Sam Resident',
+      );
+      await client.createMessage(
+        localElectoralArea: 'fingal-balbriggan',
+        intent: MessageIntent.campaign,
+        topics: ['save-stephens-green'],
+        subject: 'Subject',
+        body: 'Body',
+        senderName: 'Sam Resident',
+        templateVariants: {'save-stephens-green': 'v2'},
+      );
+
+      final captured = verify(
+        () => httpClient.post(
+          Uri.parse('http://localhost:8000/messages'),
+          headers: any(named: 'headers'),
+          body: captureAny(named: 'body'),
+        ),
+      ).captured.map((body) => jsonDecode(body as String) as Map<String, dynamic>).toList();
+      expect(captured[0]['intent'], 'own');
+      expect(captured[0]['proposals'], isEmpty);
+      expect(captured[1]['intent'], 'campaign');
+      expect(captured[1]['topics'], ['save-stephens-green']);
+      expect(captured[1]['proposals'], isEmpty);
+      expect(captured[1]['template_variants'], {'save-stephens-green': 'v2'});
     });
 
     test('throws UnauthorizedException on 401 and calls onUnauthorized', () async {
@@ -422,6 +597,7 @@ void main() {
       await expectLater(
         client.createMessage(
           localElectoralArea: 'fingal-balbriggan',
+          intent: MessageIntent.own,
           topics: ['custom'],
           subject: 'Subject',
           body: 'Body',
@@ -450,6 +626,7 @@ void main() {
       expect(
         () => client.createMessage(
           localElectoralArea: 'TEST-NOTFOUND',
+          intent: MessageIntent.own,
           topics: ['custom'],
           subject: 'Subject',
           body: 'Body',
@@ -483,6 +660,7 @@ void main() {
       try {
         await client.createMessage(
           localElectoralArea: 'fingal-balbriggan',
+          intent: MessageIntent.issues,
           topics: ['not-a-topic'],
           subject: 'Subject',
           body: 'Body',

@@ -8,9 +8,11 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../models/campaign_summary.dart';
 import '../models/composed_topics.dart';
 import '../models/council.dart';
 import '../models/lea.dart';
+import '../models/message_intent.dart';
 import '../models/message_record.dart';
 import '../models/place_match.dart';
 import '../models/topic_catalogue.dart';
@@ -43,25 +45,53 @@ class ApiClient {
     return uri.replace(queryParameters: queryParameters);
   }
 
-  /// The pre-defined topics, and how every email is laid out around the
-  /// resident's text (greeting and sign-off).
+  /// The issues ready for residents (each with the proposals they can tick), and
+  /// how every email is laid out around the resident's text (greeting and sign-off).
   Future<TopicCatalogue> getTopics() async {
     final response = await _getPublic(_uri('/topics'));
     return _decode(response, (json) => TopicCatalogue.fromJson(json as Map<String, dynamic>));
   }
 
-  /// The subject and body for the chosen topics. Public (no sign-in): the
-  /// resident reads and edits the text before they connect their email.
-  /// [variants] are ones already shown (topic id -> variant id): the server
-  /// keeps them and picks a random variant only for topics without one.
+  /// The subject and body for the chosen issues and ticked proposals
+  /// ([selection]: issue id -> proposal ids). Public (no sign-in) and needs no
+  /// area: the text never names it, and the resident reads and edits it before
+  /// they connect their email. [variants] are wording already shown (issue id ->
+  /// opener id, and "_subject" -> subject id): the server keeps them and picks
+  /// at random only for the rest.
   Future<ComposedTopics> composeTopics({
-    required String localElectoralArea,
-    required List<String> topics,
+    required Map<String, List<String>> selection,
     Map<String, String> variants = const {},
   }) async {
     final response = await _postPublic(
       _uri('/topics/compose'),
-      jsonBody: jsonEncode({'local_electoral_area': localElectoralArea, 'topics': topics, 'variants': variants}),
+      jsonBody: jsonEncode({
+        'topics': [
+          for (final entry in selection.entries) {'id': entry.key, 'proposals': entry.value},
+        ],
+        'variants': variants,
+      }),
+    );
+    return _decode(response, (json) => ComposedTopics.fromJson(json as Map<String, dynamic>));
+  }
+
+  /// The campaigns ready for residents. Public: no sign-in.
+  Future<List<CampaignSummary>> getCampaigns() async {
+    final response = await _getPublic(_uri('/campaigns'));
+    return _decode(
+      response,
+      (json) => (json['campaigns'] as List).map((c) => CampaignSummary.fromJson(c as Map<String, dynamic>)).toList(),
+    );
+  }
+
+  /// The email for a campaign. [variants] (campaign id -> variant id) keeps a
+  /// variant already shown; otherwise the server picks one at random.
+  Future<ComposedTopics> composeCampaign({
+    required String campaignId,
+    Map<String, String> variants = const {},
+  }) async {
+    final response = await _postPublic(
+      _uri('/campaigns/$campaignId/compose'),
+      jsonBody: jsonEncode({'variants': variants}),
     );
     return _decode(response, (json) => ComposedTopics.fromJson(json as Map<String, dynamic>));
   }
@@ -99,17 +129,21 @@ class ApiClient {
 
   Future<MessageRecord> createMessage({
     required String localElectoralArea,
+    required MessageIntent intent,
     required List<String> topics,
     required String subject,
     required String body,
     required String senderName,
+    Map<String, List<String>> proposals = const {},
     Map<String, String> templateVariants = const {},
   }) async {
     final response = await _postAuthed(
       _uri('/messages'),
       jsonBody: jsonEncode({
         'local_electoral_area': localElectoralArea,
+        'intent': intent.apiValue,
         'topics': topics,
+        'proposals': proposals,
         'template_variants': templateVariants,
         'subject': subject,
         'body': body,

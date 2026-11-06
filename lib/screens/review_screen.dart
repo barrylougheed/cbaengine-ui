@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../models/draft.dart';
+import '../models/message_intent.dart';
 import '../providers/draft/draft_notifier.dart';
 import '../providers/reference_data/reference_data_providers.dart';
 import '../widgets/app_banner.dart';
@@ -47,9 +47,11 @@ class ReviewScreen extends ConsumerWidget {
                 Text('${lea.name}, ${lea.council}', style: textTheme.labelLarge?.copyWith(color: colorScheme.primary)),
                 const SizedBox(height: 2),
                 Text(
-                  draft.mode == ComposeMode.ownWords
-                      ? 'Written by you'
-                      : 'Topics: ${draft.topics.map((topic) => topic.title).join(', ')}',
+                  switch (draft.intent) {
+                    MessageIntent.own => 'Written by you',
+                    MessageIntent.issues => 'Issues: ${draft.issues.map((issue) => issue.title).join(', ')}',
+                    MessageIntent.campaign => 'Campaign: ${draft.campaign?.title ?? ''}',
+                  },
                   style: textTheme.bodySmall,
                 ),
                 const SizedBox(height: 12),

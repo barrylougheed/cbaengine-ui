@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../models/message_intent.dart';
 import '../models/oauth_result.dart';
 import '../models/persisted_draft.dart';
 import '../providers/auth/auth_notifier.dart';
@@ -74,9 +75,11 @@ class _ConnectEmailScreenState extends ConsumerState<ConnectEmailScreen> {
             councilName: draft.council?.name,
             leaId: draft.lea?.id,
             leaName: draft.lea?.name,
-            mode: draft.mode,
-            topicIds: [for (final topic in draft.topics) topic.id],
-            // Only the variants of the topics in use: the API rejects any others.
+            intent: draft.intent,
+            // The issues chosen, or the campaign's id: the same list the API is sent.
+            topicIds: draft.intent == MessageIntent.own ? const [] : draft.apiTopics,
+            proposals: draft.proposalsInUse,
+            // Only the wording of what is being sent: the API rejects any other.
             templateVariants: draft.variantsInUse,
             senderName: draft.senderName.trim(),
             subject: draft.subject,
@@ -135,7 +138,9 @@ class _ConnectEmailScreenState extends ConsumerState<ConnectEmailScreen> {
         .read(messageFlowNotifierProvider.notifier)
         .startFlow(
           localElectoralArea: persisted.leaId!,
+          intent: persisted.intent,
           topics: persisted.apiTopics,
+          proposals: persisted.proposals,
           subject: persisted.subject,
           body: persisted.body,
           senderName: persisted.senderName,

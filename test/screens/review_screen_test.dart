@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:app/app.dart';
 import 'package:app/models/council.dart';
 import 'package:app/models/councillor_preview.dart';
-import 'package:app/models/draft.dart';
+import 'package:app/models/message_intent.dart';
 import 'package:app/models/lea.dart';
 import 'package:app/providers/core_providers.dart';
 import 'package:app/providers/draft/draft_notifier.dart';
@@ -39,7 +39,7 @@ void main() {
           councillors: [CouncillorPreview(name: 'A Councillor', party: 'Independent')],
         ),
       )
-      ..setMode(ComposeMode.ownWords)
+      ..setIntent(MessageIntent.own)
       ..setSenderName('Sam Resident')
       ..setSubject('Subject')
       ..setBody('Body');
@@ -92,7 +92,7 @@ void main() {
           councillors: [CouncillorPreview(name: 'A Councillor', party: 'Independent')],
         ),
       )
-      ..setMode(ComposeMode.ownWords)
+      ..setIntent(MessageIntent.own)
       ..setSenderName('Sam Resident')
       ..setSubject('Subject')
       ..setBody('Body');

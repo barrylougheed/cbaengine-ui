@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:app/api/api_client.dart';
 import 'package:app/app.dart';
+import 'package:app/models/message_intent.dart';
 import 'package:app/providers/core_providers.dart';
 import 'package:app/providers/message_flow/message_flow_notifier.dart';
 import 'package:app/router.dart';
@@ -80,6 +81,7 @@ void main() {
         .read(messageFlowNotifierProvider.notifier)
         .startFlow(
           localElectoralArea: 'fingal-swords',
+          intent: MessageIntent.own,
           topics: ['custom'],
           subject: 'Subject',
           body: 'Body',

@@ -7,15 +7,16 @@ import '../utils/counts.dart';
 import '../widgets/app_banner.dart';
 
 /// The app's true root — a menu of what CBAEngine can do, reached before
-/// any specific flow starts. "Contact your councillors" (feature 1) is the
-/// only live entry point; the second card is a placeholder for feature 3
-/// (URLGeneration, see AGENTS.md) so the layout already has room for it
-/// once that feature is actually specified and built, rather than needing
-/// another restructure then.
+/// any specific flow starts. "Craft an email" (issues, or your own words) and
+/// "Campaigns" are the live entry points (feature 1); the third card is a
+/// placeholder for feature 3 (URLGeneration, see AGENTS.md) so the layout
+/// already has room for it once that feature is actually specified and built,
+/// rather than needing another restructure then.
 ///
-/// Below the cards it says, before anyone starts, how many councillors can be
-/// written to, how the flow works, and which email accounts can send (so an
-/// iCloud or Yahoo user does not find out at the last step).
+/// Below the cards it says, before anyone starts, that one email can be sent a
+/// day, how many councillors can be written to, how the flow works, and which
+/// email accounts can send (so an iCloud or Yahoo user does not find out at the
+/// last step).
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -53,10 +54,17 @@ class HomeScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 24),
                     _FeatureCard(
-                      icon: Icons.forum_outlined,
-                      title: 'Contact your councillors',
-                      subtitle: 'Draft and send a message to your local councillors.',
-                      onTap: () => context.push('/council'),
+                      icon: Icons.edit_outlined,
+                      title: 'Craft an email',
+                      subtitle: 'Raise issues with your local councillors, or write your own message.',
+                      onTap: () => context.push('/craft'),
+                    ),
+                    const SizedBox(height: 12),
+                    _FeatureCard(
+                      icon: Icons.campaign_outlined,
+                      title: 'Campaigns',
+                      subtitle: 'Back a campaign by emailing your local councillors.',
+                      onTap: () => context.push('/campaigns'),
                     ),
                     const SizedBox(height: 12),
                     const _FeatureCard(
@@ -65,6 +73,15 @@ class HomeScreen extends ConsumerWidget {
                       subtitle: 'Share a pre-filled message for others to send.',
                       badge: 'Coming soon',
                       onTap: null,
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.info_outline, size: 18, color: colorScheme.primary),
+                        const SizedBox(width: 8),
+                        const Expanded(child: Text('You can send one email a day.')),
+                      ],
                     ),
                     if (totalCouncillors > 0) ...[
                       const SizedBox(height: 16),
@@ -76,10 +93,10 @@ class HomeScreen extends ConsumerWidget {
                     const SizedBox(height: 24),
                     Text('How it works', style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 8),
-                    const _Step(number: 1, text: 'Choose your council and area.'),
+                    const _Step(number: 1, text: 'Craft an email, or back a campaign.'),
                     const _Step(
                       number: 2,
-                      text: 'Pick a topic or write your own, then review your message and who it goes to.',
+                      text: 'Choose your council and area, then review your message and who it goes to.',
                     ),
                     const _Step(
                       number: 3,

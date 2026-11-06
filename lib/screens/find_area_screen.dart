@@ -64,7 +64,7 @@ class _FindAreaScreenState extends ConsumerState<FindAreaScreen> {
     final draft = ref.read(draftNotifierProvider.notifier);
     draft.selectCouncil(Council(id: match.councilId, name: match.lea.council));
     draft.selectLea(match.lea);
-    context.push('/compose');
+    context.push('/review');
   }
 
   @override

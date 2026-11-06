@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/api_exceptions.dart';
+import '../../models/message_intent.dart';
 import '../../utils/friendly_time.dart';
 import '../core_providers.dart';
 import 'message_flow_state.dart';
@@ -15,10 +16,12 @@ class MessageFlowNotifier extends Notifier<MessageFlowState> {
 
   Future<void> startFlow({
     required String localElectoralArea,
+    required MessageIntent intent,
     required List<String> topics,
     required String subject,
     required String body,
     required String senderName,
+    Map<String, List<String>> proposals = const {},
     Map<String, String> templateVariants = const {},
   }) async {
     final apiClient = ref.read(apiClientProvider);
@@ -26,7 +29,9 @@ class MessageFlowNotifier extends Notifier<MessageFlowState> {
       state = const MessageFlowCreating();
       final created = await apiClient.createMessage(
         localElectoralArea: localElectoralArea,
+        intent: intent,
         topics: topics,
+        proposals: proposals,
         subject: subject,
         body: body,
         senderName: senderName,

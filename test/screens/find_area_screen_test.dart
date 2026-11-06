@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:app/app.dart';
+import 'package:app/models/message_intent.dart';
 import 'package:app/providers/core_providers.dart';
 import 'package:app/providers/draft/draft_notifier.dart';
 import 'package:app/router.dart';
@@ -87,6 +88,12 @@ void main() {
       retry: noAutomaticRetry,
       overrides: [sharedPreferencesProvider.overrideWithValue(prefs), httpClientProvider.overrideWithValue(MockClient(handle))],
     );
+    // The council and area come after the email, so there has to be one.
+    container.read(draftNotifierProvider.notifier)
+      ..setIntent(MessageIntent.own)
+      ..setSenderName('Sam Resident')
+      ..setSubject('Subject')
+      ..setBody('Body');
     await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const CbaEngineApp()));
     await tester.pumpAndSettle();
     unawaited(container.read(routerProvider).push(path));
@@ -138,7 +145,7 @@ void main() {
     final draft = container.read(draftNotifierProvider);
     expect(draft.council?.name, 'Fingal County Council');
     expect(draft.lea?.id, 'fingal-swords');
-    expect(find.text('Select a topic'), findsOneWidget); // the Compose screen
+    expect(find.textContaining('Review your message'), findsOneWidget); // the Review screen
   });
 
   testWidgets('a place in two areas shows both and asks which one their address is in', (tester) async {
