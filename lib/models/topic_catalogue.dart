@@ -8,7 +8,7 @@ import 'topic_summary.dart';
 class EmailLayout extends Equatable {
   const EmailLayout({required this.greetingFormat, required this.signOff});
 
-  /// e.g. "Dear Councillor {name},": `{name}` is each councillor's own name.
+  /// e.g. "Hi {name},": `{name}` is each councillor's own name.
   final String greetingFormat;
 
   /// e.g. "Kind regards,": the resident's name follows on the next line.

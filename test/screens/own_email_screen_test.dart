@@ -45,7 +45,7 @@ void main() {
   testWidgets('explains what is added around the message', (tester) async {
     await openOwn(tester);
 
-    expect(find.textContaining('Dear Councillor <name>,'), findsOneWidget);
+    expect(find.textContaining('Hi <name>,'), findsOneWidget);
     expect(find.textContaining('Kind regards,'), findsOneWidget);
   });
 

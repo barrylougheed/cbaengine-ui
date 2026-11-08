@@ -69,7 +69,7 @@ class FakeApi {
         if (topicsFail) return json({'detail': 'down'}, 500);
         return json({
           'topics': issues,
-          'email_layout': {'greeting_format': 'Dear Councillor {name},', 'sign_off': 'Kind regards,'},
+          'email_layout': {'greeting_format': 'Hi {name},', 'sign_off': 'Kind regards,'},
         });
       case '/topics/compose':
         final asked = jsonDecode(request.body) as Map<String, dynamic>;
@@ -79,7 +79,11 @@ class FakeApi {
         final ids = [for (final topic in selection) topic['id'] as String];
         return json({
           'topics': ids,
-          'variants': {for (final id in ids) id: pinned[id] ?? 'view', '_subject': pinned['_subject'] ?? 'stand'},
+          'variants': {
+            '_intro': pinned['_intro'] ?? 'open-conversation',
+            for (final id in ids) id: pinned[id] ?? 'view',
+            '_subject': pinned['_subject'] ?? 'stand',
+          },
           'subject': 'Where do you stand on ${ids.join(' and ')}?',
           'body': [
             for (final topic in selection) 'About ${topic['id']}: ${(topic['proposals'] as List).join(', ')}',

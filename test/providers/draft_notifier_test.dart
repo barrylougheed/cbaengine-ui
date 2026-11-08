@@ -60,13 +60,18 @@ void main() {
   http.Response ok(Object body) =>
       http.Response(jsonEncode(body), 200, headers: {'content-type': 'application/json'});
 
-  /// What the server would answer for the issues asked: an opener "o2" for each
-  /// (unless one was pinned) and subject "s2", with text built from them.
+  /// What the server would answer for the issues asked: an introduction "i2",
+  /// an opener "o2" for each issue and subject "s2" (unless pinned), with text
+  /// built from them.
   Future<http.Response> defaultIssueAnswer(Map<String, dynamic> request) async {
     final asked = [for (final topic in request['topics'] as List) topic as Map<String, dynamic>];
     final pinned = Map<String, String>.from(request['variants'] as Map);
     final ids = [for (final topic in asked) topic['id'] as String];
-    final variants = {for (final id in ids) id: pinned[id] ?? 'o2', '_subject': pinned['_subject'] ?? 's2'};
+    final variants = {
+      '_intro': pinned['_intro'] ?? 'i2',
+      for (final id in ids) id: pinned[id] ?? 'o2',
+      '_subject': pinned['_subject'] ?? 's2',
+    };
     final sections = [
       for (final topic in asked) '${topic['id']} (${variants[topic['id']]}): ${(topic['proposals'] as List).join(', ')}',
     ];
@@ -302,7 +307,7 @@ void main() {
       expect(state().proposalsInUse, {
         'triple-lock': ['lock-p1', 'lock-p2'],
       });
-      expect(state().variantsInUse, {'triple-lock': 'o2', '_subject': 's2'});
+      expect(state().variantsInUse, {'triple-lock': 'o2', '_subject': 's2', '_intro': 'i2'});
     });
 
     test('keeps the wording already shown when the ticks change', () async {
@@ -314,7 +319,11 @@ void main() {
         final ids = [for (final topic in request['topics'] as List) (topic as Map<String, dynamic>)['id'] as String];
         return ok({
           'topics': ids,
-          'variants': {for (final id in ids) id: pinned[id] ?? 'o5', '_subject': pinned['_subject'] ?? 's5'},
+          'variants': {
+            '_intro': pinned['_intro'] ?? 'i5',
+            for (final id in ids) id: pinned[id] ?? 'o5',
+            '_subject': pinned['_subject'] ?? 's5',
+          },
           'subject': 'S',
           'body': 'B',
           'footer': 'F',
@@ -326,9 +335,10 @@ void main() {
       });
 
       // The second request pinned what the first one returned.
-      expect(composeRequests.last['variants'], {'housing-crisis': 'o2', '_subject': 's2'});
+      expect(composeRequests.last['variants'], {'housing-crisis': 'o2', '_subject': 's2', '_intro': 'i2'});
       expect(state().templateVariants['housing-crisis'], 'o2');
       expect(state().templateVariants['_subject'], 's2');
+      expect(state().templateVariants['_intro'], 'i2');
     });
 
     test('remembers the opener of an issue that was un-ticked, so ticking it again does not re-roll it', () async {

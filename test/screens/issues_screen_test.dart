@@ -75,7 +75,7 @@ void main() {
       'variants': <String, String>{},
     });
     expect(find.textContaining('Started from a topic template.'), findsOneWidget);
-    expect(find.textContaining('Dear Councillor <name>,'), findsOneWidget);
+    expect(find.textContaining('Hi <name>,'), findsOneWidget);
   });
 
   testWidgets('the name is still needed before continuing', (tester) async {
@@ -126,7 +126,11 @@ void main() {
 
     await tick(tester, register);
 
-    expect(api.composeRequests.last['variants'], {'housing-crisis': 'view', '_subject': 'stand'});
+    expect(api.composeRequests.last['variants'], {
+      '_intro': 'open-conversation',
+      'housing-crisis': 'view',
+      '_subject': 'stand',
+    });
     expect(api.composeRequests.last['topics'], [
       {
         'id': 'housing-crisis',

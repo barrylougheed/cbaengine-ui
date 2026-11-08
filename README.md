@@ -39,7 +39,7 @@ of email, one per email: about **issues**, in the resident's **own words**, or f
 - **Campaigns** (routes `/campaigns`, `/campaigns/email`): the list of campaigns the owner has set up, each
   with its summary and an optional "Learn more" link. Choosing one shows the email the server wrote for it
   (editable), then the name. Only campaigns that are finished are listed.
-- On every one of these the server adds "Dear Councillor <name>," for each councillor and the sign-off
+- On every one of these the server adds "Hi <name>," for each councillor and the sign-off
   around the text, and a read-only footer for issue and campaign emails (a campaign's footer names it);
   all of it is shown on Review.
 - Text left in `[[double square brackets]]` is flagged and blocks Continue: it is a placeholder the

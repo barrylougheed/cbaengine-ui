@@ -120,7 +120,7 @@ void main() {
               ],
             },
           ],
-          'email_layout': {'greeting_format': 'Dear Councillor {name},', 'sign_off': 'Kind regards,'},
+          'email_layout': {'greeting_format': 'Hi {name},', 'sign_off': 'Kind regards,'},
         }, 200),
       );
 
@@ -130,7 +130,7 @@ void main() {
       expect(catalogue.topics.map((t) => t.title), ['Housing Crisis', 'Triple Lock']);
       expect(catalogue.topics.first.proposals.map((p) => p.id), ['ban-bulk-purchases', 'public-register']);
       expect(catalogue.topics.first.proposals.first.text, 'a ban on vulture funds bulk purchasing properties');
-      expect(catalogue.emailLayout.greetingFor('Conor Dowling'), 'Dear Councillor Conor Dowling,');
+      expect(catalogue.emailLayout.greetingFor('Conor Dowling'), 'Hi Conor Dowling,');
       expect(catalogue.emailLayout.signOff, 'Kind regards,');
     });
 
@@ -138,7 +138,7 @@ void main() {
       when(() => httpClient.get(Uri.parse('http://localhost:8000/topics'))).thenAnswer(
         (_) async => jsonResponse({
           'topics': <Object>[],
-          'email_layout': {'greeting_format': 'Dear Councillor {name},', 'sign_off': 'Kind regards,'},
+          'email_layout': {'greeting_format': 'Hi {name},', 'sign_off': 'Kind regards,'},
         }, 200),
       );
 

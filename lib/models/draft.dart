@@ -13,10 +13,12 @@ const unfinishedTextMarker = '[[';
 /// The longest name the API accepts for the sign-off.
 const maxSenderNameLength = 100;
 
-/// Where the subject's wording is kept among the wording the server chose
-/// ({issue id: opener id, "_subject": subject id}). Starts with an underscore,
-/// which no id can, so it can never be mistaken for an issue.
+/// Where the subject's and the introduction's wording are kept among the
+/// wording the server chose ({issue id: opener id, "_subject": subject id,
+/// "_intro": introduction id}). They start with an underscore, which no id can,
+/// so they can never be mistaken for an issue.
 const subjectVariantKey = '_subject';
+const introVariantKey = '_intro';
 
 /// The in-progress message the user is building — held in
 /// draftNotifierProvider as the user moves through the email (issues and
@@ -143,6 +145,7 @@ class Draft extends Equatable {
           for (final issue in issues)
             if (templateVariants.containsKey(issue.id)) issue.id: templateVariants[issue.id]!,
           if (templateVariants.containsKey(subjectVariantKey)) subjectVariantKey: templateVariants[subjectVariantKey]!,
+          if (templateVariants.containsKey(introVariantKey)) introVariantKey: templateVariants[introVariantKey]!,
         };
       case MessageIntent.campaign:
         final chosen = campaign;
