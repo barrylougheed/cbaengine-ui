@@ -18,6 +18,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   Future<ProviderContainer> openReview(WidgetTester tester) async {
+    // A tall window, so the whole (lazily built) page is on screen and nothing needs scrolling to be found.
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final container = ProviderContainer.test(

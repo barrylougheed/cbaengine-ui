@@ -11,10 +11,10 @@ import '../providers/core_providers.dart';
 import '../providers/draft/draft_notifier.dart';
 import '../providers/message_flow/message_flow_notifier.dart';
 import '../services/oauth_fragment_parser.dart';
-import '../widgets/app_banner.dart';
+import '../theme/app_theme.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/loading_view.dart';
-import '../widgets/step_progress_indicator.dart';
+import '../widgets/step_page.dart';
 
 /// Step 5: triggers OAuth and hosts the post-connect auto-chain
 /// (create -> confirm -> send). Reached both from a fresh "Connect email and send" tap
@@ -78,7 +78,6 @@ class _ConnectEmailScreenState extends ConsumerState<ConnectEmailScreen> {
             intent: draft.intent,
             // The issues chosen, or the campaign's id: the same list the API is sent.
             topicIds: draft.intent == MessageIntent.own ? const [] : draft.apiTopics,
-            proposals: draft.proposalsInUse,
             // Only the wording of what is being sent: the API rejects any other.
             templateVariants: draft.variantsInUse,
             senderName: draft.senderName.trim(),
@@ -140,7 +139,6 @@ class _ConnectEmailScreenState extends ConsumerState<ConnectEmailScreen> {
           localElectoralArea: persisted.leaId!,
           intent: persisted.intent,
           topics: persisted.apiTopics,
-          proposals: persisted.proposals,
           subject: persisted.subject,
           body: persisted.body,
           senderName: persisted.senderName,
@@ -154,38 +152,24 @@ class _ConnectEmailScreenState extends ConsumerState<ConnectEmailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const AppBanner()),
-      body: Column(
-        children: [
-          const StepProgressIndicator(currentStep: 5, totalSteps: 5, label: 'Connect your email'),
-          Expanded(
-            child: Center(
-              child: _busy
-                  ? const LoadingView()
-                  : SingleChildScrollView(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (_error != null) ...[ErrorBanner(message: _error!), const SizedBox(height: 16)],
-                            const Text('Connect the email account you want to send from.'),
-                            const SizedBox(height: 16),
-                            const _WhatYouAreAgreeingTo(),
-                            const SizedBox(height: 24),
-                            FilledButton(
-                              onPressed: () => _pickProviderAndConnect(context),
-                              child: const Text('Connect email'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-            ),
-          ),
-        ],
-      ),
+    return StepPage(
+      step: 5,
+      label: 'Connect your email',
+      // While connecting or sending there is nothing to press.
+      action: _busy
+          ? null
+          : FilledButton(onPressed: () => _pickProviderAndConnect(context), child: const Text('Connect email')),
+      children: _busy
+          ? const [Padding(padding: EdgeInsets.only(top: 64), child: LoadingView())]
+          : [
+              if (_error != null) ...[ErrorBanner(message: _error!), const SizedBox(height: 16)],
+              Text(
+                'Connect the email account you want to send from.',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 16),
+              const _WhatYouAreAgreeingTo(),
+            ],
     );
   }
 
@@ -226,8 +210,9 @@ class _WhatYouAreAgreeingTo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -251,11 +236,11 @@ class _WhatYouAreAgreeingTo extends StatelessWidget {
 
   Widget _point(BuildContext context, IconData icon, String text) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
+          Icon(icon, size: 20, color: AppColors.linkOlive),
           const SizedBox(width: 12),
           Expanded(child: Text(text)),
         ],

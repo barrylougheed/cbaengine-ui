@@ -45,31 +45,26 @@ class ApiClient {
     return uri.replace(queryParameters: queryParameters);
   }
 
-  /// The issues ready for residents (each with the proposals they can tick), and
-  /// how every email is laid out around the resident's text (greeting and sign-off).
+  /// The issues ready for residents, and how every email is laid out around the
+  /// resident's text (greeting and sign-off).
   Future<TopicCatalogue> getTopics() async {
     final response = await _getPublic(_uri('/topics'));
     return _decode(response, (json) => TopicCatalogue.fromJson(json as Map<String, dynamic>));
   }
 
-  /// The subject and body for the chosen issues and ticked proposals
-  /// ([selection]: issue id -> proposal ids). Public (no sign-in) and needs no
-  /// area: the text never names it, and the resident reads and edits it before
-  /// they connect their email. [variants] are wording already shown (issue id ->
-  /// opener id, and "_subject" -> subject id): the server keeps them and picks
-  /// at random only for the rest.
+  /// The subject and body for the chosen issues ([issueIds]). Public (no
+  /// sign-in) and needs no area: the text never names it, and the resident
+  /// reads and edits it before they connect their email. [variants] are wording
+  /// already shown (issue id -> wording id, "_subject" -> subject id and
+  /// "_intro" -> introduction id): the server keeps them and picks at random
+  /// only for the rest.
   Future<ComposedTopics> composeTopics({
-    required Map<String, List<String>> selection,
+    required List<String> issueIds,
     Map<String, String> variants = const {},
   }) async {
     final response = await _postPublic(
       _uri('/topics/compose'),
-      jsonBody: jsonEncode({
-        'topics': [
-          for (final entry in selection.entries) {'id': entry.key, 'proposals': entry.value},
-        ],
-        'variants': variants,
-      }),
+      jsonBody: jsonEncode({'topics': issueIds, 'variants': variants}),
     );
     return _decode(response, (json) => ComposedTopics.fromJson(json as Map<String, dynamic>));
   }
@@ -134,7 +129,6 @@ class ApiClient {
     required String subject,
     required String body,
     required String senderName,
-    Map<String, List<String>> proposals = const {},
     Map<String, String> templateVariants = const {},
   }) async {
     final response = await _postAuthed(
@@ -143,7 +137,6 @@ class ApiClient {
         'local_electoral_area': localElectoralArea,
         'intent': intent.apiValue,
         'topics': topics,
-        'proposals': proposals,
         'template_variants': templateVariants,
         'subject': subject,
         'body': body,

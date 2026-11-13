@@ -99,26 +99,12 @@ void main() {
   });
 
   group('getTopics', () {
-    test('returns the issues with their titles and proposals, and the email layout, on 200', () async {
+    test('returns the issues with their titles, and the email layout, on 200', () async {
       when(() => httpClient.get(Uri.parse('http://localhost:8000/topics'))).thenAnswer(
         (_) async => jsonResponse({
           'topics': [
-            {
-              'id': 'housing-crisis',
-              'title': 'Housing Crisis',
-              'proposals': [
-                {'id': 'ban-bulk-purchases', 'text': 'a ban on vulture funds bulk purchasing properties'},
-                {'id': 'public-register', 'text': 'a public register to monitor house bidding'},
-              ],
-            },
-            {
-              'id': 'triple-lock',
-              'title': 'Triple Lock',
-              'proposals': [
-                {'id': 'keep-it', 'text': 'keeping the triple lock'},
-                {'id': 'review-it', 'text': 'a review of the triple lock'},
-              ],
-            },
+            {'id': 'housing-crisis', 'title': 'Housing Crisis'},
+            {'id': 'homelessness', 'title': 'Homelessness'},
           ],
           'email_layout': {'greeting_format': 'Hi {name},', 'sign_off': 'Kind regards,'},
         }, 200),
@@ -126,10 +112,8 @@ void main() {
 
       final catalogue = await client.getTopics();
 
-      expect(catalogue.topics.map((t) => t.id), ['housing-crisis', 'triple-lock']);
-      expect(catalogue.topics.map((t) => t.title), ['Housing Crisis', 'Triple Lock']);
-      expect(catalogue.topics.first.proposals.map((p) => p.id), ['ban-bulk-purchases', 'public-register']);
-      expect(catalogue.topics.first.proposals.first.text, 'a ban on vulture funds bulk purchasing properties');
+      expect(catalogue.topics.map((t) => t.id), ['housing-crisis', 'homelessness']);
+      expect(catalogue.topics.map((t) => t.title), ['Housing Crisis', 'Homelessness']);
       expect(catalogue.emailLayout.greetingFor('Conor Dowling'), 'Hi Conor Dowling,');
       expect(catalogue.emailLayout.signOff, 'Kind regards,');
     });
@@ -149,9 +133,14 @@ void main() {
   group('composeTopics', () {
     const composedJson = {
       'topics': ['housing-crisis', 'triple-lock'],
-      'variants': {'housing-crisis': 'view', 'triple-lock': 'doing', '_subject': 'stand'},
+      'variants': {
+        '_intro': 'open-conversation',
+        'housing-crisis': 'where-you-stand',
+        'triple-lock': 'real-solutions',
+        '_subject': 'stand',
+      },
       'subject': 'Where do you stand on Housing Crisis and Triple Lock?',
-      'body': 'Housing Crisis\nWhat is your view on Housing Crisis?',
+      'body': 'Housing Crisis\nWhere do you stand on the housing crisis?',
       'footer': 'Started from a CBA topic template.',
     };
 
@@ -165,19 +154,21 @@ void main() {
       ).thenAnswer((_) async => response);
     }
 
-    test('needs no sign-in or area: posts the ticked proposals and pinned wording with no Authorization header', () async {
+    test('needs no sign-in or area: posts the issue ids and pinned wording with no Authorization header', () async {
       stubCompose(jsonResponse(composedJson, 200));
 
       final composed = await client.composeTopics(
-        selection: {
-          'housing-crisis': ['ban-bulk-purchases', 'public-register'],
-          'triple-lock': ['keep-it'],
-        },
-        variants: {'housing-crisis': 'view'},
+        issueIds: ['housing-crisis', 'triple-lock'],
+        variants: {'housing-crisis': 'where-you-stand'},
       );
 
       expect(composed.topics, ['housing-crisis', 'triple-lock']);
-      expect(composed.variants, {'housing-crisis': 'view', 'triple-lock': 'doing', '_subject': 'stand'});
+      expect(composed.variants, {
+        '_intro': 'open-conversation',
+        'housing-crisis': 'where-you-stand',
+        'triple-lock': 'real-solutions',
+        '_subject': 'stand',
+      });
       expect(composed.subject, startsWith('Where do you stand on'));
       expect(composed.footer, 'Started from a CBA topic template.');
       final captured = verify(
@@ -189,17 +180,8 @@ void main() {
       ).captured;
       expect((captured[0] as Map).containsKey('Authorization'), isFalse);
       expect(jsonDecode(captured[1] as String), {
-        'topics': [
-          {
-            'id': 'housing-crisis',
-            'proposals': ['ban-bulk-purchases', 'public-register'],
-          },
-          {
-            'id': 'triple-lock',
-            'proposals': ['keep-it'],
-          },
-        ],
-        'variants': {'housing-crisis': 'view'},
+        'topics': ['housing-crisis', 'triple-lock'],
+        'variants': {'housing-crisis': 'where-you-stand'},
       });
     });
 
@@ -207,7 +189,7 @@ void main() {
       stubCompose(jsonResponse({'detail': 'Topic not found.'}, 404));
 
       expect(
-        () => client.composeTopics(selection: {'nope': ['x']}),
+        () => client.composeTopics(issueIds: ['nope']),
         throwsA(isA<NotFoundException>()),
       );
     });
@@ -216,7 +198,7 @@ void main() {
       stubCompose(jsonResponse({'detail': 'Too many topics for one email. Please choose fewer.'}, 422));
 
       await expectLater(
-        client.composeTopics(selection: {'a': ['x'], 'b': ['y']}),
+        client.composeTopics(issueIds: ['a', 'b']),
         throwsA(
           isA<ApiException>().having((e) => e.message, 'message', 'Too many topics for one email. Please choose fewer.'),
         ),
@@ -229,7 +211,7 @@ void main() {
       ).thenThrow(Exception('offline'));
 
       expect(
-        () => client.composeTopics(selection: {'housing-crisis': ['ban-bulk-purchases']}),
+        () => client.composeTopics(issueIds: ['housing-crisis']),
         throwsA(isA<NetworkException>()),
       );
     });
@@ -490,7 +472,7 @@ void main() {
       expect((captured.single as Map)['Authorization'], 'Bearer the-token');
     });
 
-    test('sends the intent, the issues, the ticked proposals, the wording shown and the name', () async {
+    test('sends the intent, the issues, the wording shown and the name, with no proposals', () async {
       token = 'the-token';
       when(
         () => httpClient.post(
@@ -504,14 +486,10 @@ void main() {
         localElectoralArea: 'fingal-balbriggan',
         intent: MessageIntent.issues,
         topics: ['housing-crisis', 'triple-lock'],
-        proposals: {
-          'housing-crisis': ['ban-bulk-purchases'],
-          'triple-lock': ['keep-it', 'review-it'],
-        },
         subject: 'Subject',
         body: 'Body',
         senderName: 'Sam Resident',
-        templateVariants: {'housing-crisis': 'view', 'triple-lock': 'doing', '_subject': 'stand'},
+        templateVariants: {'housing-crisis': 'where-you-stand', 'triple-lock': 'real-solutions', '_subject': 'stand'},
       );
 
       final captured = verify(
@@ -525,11 +503,7 @@ void main() {
         'local_electoral_area': 'fingal-balbriggan',
         'intent': 'issues',
         'topics': ['housing-crisis', 'triple-lock'],
-        'proposals': {
-          'housing-crisis': ['ban-bulk-purchases'],
-          'triple-lock': ['keep-it', 'review-it'],
-        },
-        'template_variants': {'housing-crisis': 'view', 'triple-lock': 'doing', '_subject': 'stand'},
+        'template_variants': {'housing-crisis': 'where-you-stand', 'triple-lock': 'real-solutions', '_subject': 'stand'},
         'subject': 'Subject',
         'body': 'Body',
         'sender_name': 'Sam Resident',
@@ -572,10 +546,10 @@ void main() {
         ),
       ).captured.map((body) => jsonDecode(body as String) as Map<String, dynamic>).toList();
       expect(captured[0]['intent'], 'own');
-      expect(captured[0]['proposals'], isEmpty);
+      expect(captured[0].containsKey('proposals'), isFalse);
       expect(captured[1]['intent'], 'campaign');
       expect(captured[1]['topics'], ['save-stephens-green']);
-      expect(captured[1]['proposals'], isEmpty);
+      expect(captured[1].containsKey('proposals'), isFalse);
       expect(captured[1]['template_variants'], {'save-stephens-green': 'v2'});
     });
 

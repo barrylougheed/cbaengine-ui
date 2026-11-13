@@ -182,7 +182,7 @@ void main() {
     expect((state() as MessageFlowFailed).failure, isA<GenericFlowFailure>());
   });
 
-  test('drafts the message with the intent, the issues, the ticks, the wording shown and the sign-off name', () async {
+  test('drafts the message with the intent, the issues, the wording shown and the sign-off name', () async {
     stubCreate(jsonResponse(_messageJson(id: 'msg-1', status: 'draft_created'), 201));
     stubPost('/messages/msg-1/confirm', jsonResponse(_messageJson(id: 'msg-1', status: 'awaiting_confirmation'), 200));
     stubPost('/messages/msg-1/send', jsonResponse(_messageJson(id: 'msg-1', status: 'sent'), 200));
@@ -191,14 +191,10 @@ void main() {
       localElectoralArea: 'fingal-balbriggan',
       intent: MessageIntent.issues,
       topics: ['housing-crisis', 'triple-lock'],
-      proposals: {
-        'housing-crisis': ['ban-bulk-purchases'],
-        'triple-lock': ['keep-it'],
-      },
       subject: 'Subject',
       body: 'Body',
       senderName: 'Sam Resident',
-      templateVariants: {'housing-crisis': 'view', 'triple-lock': 'doing', '_subject': 'stand'},
+      templateVariants: {'housing-crisis': 'where-you-stand', 'triple-lock': 'real-solutions', '_subject': 'stand'},
     );
 
     final captured = verify(
@@ -211,11 +207,12 @@ void main() {
     final sent = jsonDecode(captured.single as String) as Map<String, dynamic>;
     expect(sent['intent'], 'issues');
     expect(sent['topics'], ['housing-crisis', 'triple-lock']);
-    expect(sent['proposals'], {
-      'housing-crisis': ['ban-bulk-purchases'],
-      'triple-lock': ['keep-it'],
+    expect(sent.containsKey('proposals'), isFalse); // issues have nothing to tick
+    expect(sent['template_variants'], {
+      'housing-crisis': 'where-you-stand',
+      'triple-lock': 'real-solutions',
+      '_subject': 'stand',
     });
-    expect(sent['template_variants'], {'housing-crisis': 'view', 'triple-lock': 'doing', '_subject': 'stand'});
     expect(sent['sender_name'], 'Sam Resident');
   });
 
@@ -244,7 +241,7 @@ void main() {
     final sent = jsonDecode(captured.single as String) as Map<String, dynamic>;
     expect(sent['intent'], 'campaign');
     expect(sent['topics'], ['save-stephens-green']);
-    expect(sent['proposals'], isEmpty);
+    expect(sent.containsKey('proposals'), isFalse);
   });
 
   test('state transitions through creating/confirming/sending in order', () async {

@@ -7,7 +7,7 @@ import '../../models/place_match.dart';
 import '../../models/topic_catalogue.dart';
 import '../core_providers.dart';
 
-/// The issues to pick from (each with its proposals) and the fixed parts of
+/// The issues to pick from and the fixed parts of
 /// every email (greeting and sign-off), loaded once from GET /topics.
 final topicCatalogueProvider = FutureProvider<TopicCatalogue>((ref) {
   return ref.watch(apiClientProvider).getTopics();

@@ -1,16 +1,16 @@
 import 'package:app/config/app_config.dart';
-import 'package:app/screens/privacy_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../support/test_app.dart';
+
 void main() {
   testWidgets('the privacy notice covers what residents must be told', (WidgetTester tester) async {
+    // Opened through the app, as a resident reaches it (its header needs the router).
+    await openApp(tester, FakeApi(), path: '/privacy');
     // Tall enough that the (lazily built) ListView renders every section.
-    tester.view.physicalSize = const Size(800, 8000);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.reset);
-
-    await tester.pumpWidget(const MaterialApp(home: PrivacyScreen()));
+    tester.view.physicalSize = const Size(900, 14000);
+    await tester.pumpAndSettle();
 
     final text = tester
         .widgetList<Text>(find.byType(Text))

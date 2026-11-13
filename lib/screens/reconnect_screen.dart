@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/auth/auth_notifier.dart';
 import '../providers/draft/draft_notifier.dart';
-import '../widgets/app_banner.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_header.dart';
+import '../widgets/content_width.dart';
 
 /// Reached from anywhere the moment authNotifierProvider reports an
 /// expired session (a 401 from any authenticated call) — the router's
@@ -18,19 +20,22 @@ class ReconnectScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(title: const AppBanner()),
+      appBar: const AppHeader(),
+      // Centred in the window, in the same reading column as the steps.
       body: Center(
         child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
+          child: ContentWidth(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
+                const Icon(Icons.link_off, size: 48, color: AppColors.clay),
+                const SizedBox(height: 16),
+                Text(
                   'Your email connection has expired. Please reconnect your email account.',
                   textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
                 FilledButton(
                   onPressed: () {
                     ref.read(authNotifierProvider.notifier).signOut();

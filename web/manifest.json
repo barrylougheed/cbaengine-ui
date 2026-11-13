@@ -1,11 +1,11 @@
 {
-    "name": "app",
-    "short_name": "app",
+    "name": "CBAEngine - email your local councillors",
+    "short_name": "CBAEngine",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FFFFFF",
+    "theme_color": "#3F4B37",
+    "description": "Email your local councillors in minutes: pick the issues you care about or write your own message, choose your area, and send it from your own email account.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -1,0 +1,157 @@
+import 'package:app/models/council.dart';
+import 'package:app/models/councillor_preview.dart';
+import 'package:app/models/lea.dart';
+import 'package:app/models/message_intent.dart';
+import 'package:app/providers/draft/draft_notifier.dart';
+import 'package:app/widgets/content_width.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import '../support/test_app.dart';
+
+/// Every step of the flow shares one layout: the content sits in a centred
+/// reading column (at most [ContentWidth.form] wide) however wide the window is,
+/// and shrinks to the screen with a 16px margin on a phone. This opens each
+/// screen in a very wide and a very narrow window and checks that one
+/// representative piece of its content is where it should be.
+///
+/// Home has its own, wider layout and is checked in its own tests.
+void main() {
+  late FakeApi api;
+
+  setUp(() => api = FakeApi());
+
+  /// The draft a resident has before choosing the council: their own email, written.
+  void emailWritten(DraftNotifier draft) {
+    draft
+      ..setIntent(MessageIntent.own)
+      ..setSenderName('Sam Resident')
+      ..setSubject('Subject')
+      ..setBody('Body');
+  }
+
+  /// ...and after choosing the area, ready to review.
+  void areaChosen(DraftNotifier draft) {
+    emailWritten(draft);
+    draft
+      ..selectCouncil(const Council(id: 'fingal-county-council', name: 'Fingal County Council'))
+      ..selectLea(
+        const Lea(
+          id: 'swords',
+          name: 'Swords',
+          council: 'Fingal County Council',
+          councillors: [CouncillorPreview(name: 'A Councillor', party: 'Independent')],
+        ),
+      );
+  }
+
+  Finder cardWith(String text) => find.ancestor(of: find.text(text), matching: find.byType(Card)).first;
+
+  final screens =
+      <
+        ({
+          String name,
+          String path,
+          void Function(DraftNotifier draft)? prepare,
+          Future<void> Function(WidgetTester tester)? after,
+          Finder Function() content,
+        })
+      >[
+        (name: 'Craft an email', path: '/craft', prepare: null, after: null, content: () => cardWith('Select issues')),
+        (
+          name: 'Select issues',
+          path: '/craft/issues',
+          prepare: null,
+          after: null,
+          content: () => find.byType(Card).first,
+        ),
+        (
+          name: 'Write my own email',
+          path: '/craft/own',
+          prepare: (draft) => draft.setIntent(MessageIntent.own),
+          after: null,
+          content: () => find.widgetWithText(TextField, 'Subject'),
+        ),
+        (
+          name: 'Campaigns',
+          path: '/campaigns',
+          prepare: null,
+          after: null,
+          content: () => cardWith("Save Stephen's Green"),
+        ),
+        (
+          name: 'A campaign email',
+          path: '/campaigns',
+          prepare: null,
+          after: (tester) async {
+            await tester.tap(find.text("Save Stephen's Green"));
+            await tester.pumpAndSettle();
+          },
+          content: () => find.byType(Card).first,
+        ),
+        (
+          name: 'Choose a council',
+          path: '/council',
+          prepare: emailWritten,
+          after: null,
+          content: () => cardWith('Not sure? Find your area'),
+        ),
+        (
+          name: 'Choose an area',
+          path: '/council/fingal-county-council/lea',
+          prepare: emailWritten,
+          after: null,
+          content: () => find.byType(Card).first,
+        ),
+        (
+          name: 'Find your area',
+          path: '/find-area',
+          prepare: emailWritten,
+          after: null,
+          content: () => find.byType(TextField),
+        ),
+        (name: 'Review', path: '/review', prepare: areaChosen, after: null, content: () => find.byType(Card).first),
+        (
+          name: 'Connect your email',
+          path: '/connect',
+          prepare: areaChosen,
+          after: null,
+          content: () => find.byType(Card).first,
+        ),
+        (
+          name: 'Privacy notice',
+          path: '/privacy',
+          prepare: null,
+          after: null,
+          content: () => find.text('Who is responsible'),
+        ),
+      ];
+
+  for (final screen in screens) {
+    Future<void> open(WidgetTester tester, double width) async {
+      await openApp(tester, api, prepare: screen.prepare, path: screen.path);
+      await screen.after?.call(tester);
+      tester.view.physicalSize = Size(width, 2400);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('${screen.name}: on a wide screen the content stays in the reading column', (tester) async {
+      await open(tester, 1600);
+
+      final rect = tester.getRect(screen.content());
+      final marginEachSide = (1600 - ContentWidth.form) / 2; // 440
+      expect(rect.left, greaterThanOrEqualTo(marginEachSide - 0.5));
+      expect(rect.right, lessThanOrEqualTo(1600 - marginEachSide + 0.5));
+      expect(rect.width, greaterThan(100)); // the column is used, not collapsed
+    });
+
+    testWidgets('${screen.name}: on a phone the content fits the screen', (tester) async {
+      await open(tester, 390);
+
+      final rect = tester.getRect(screen.content());
+      expect(rect.left, greaterThanOrEqualTo(0));
+      expect(rect.right, lessThanOrEqualTo(390));
+      expect(tester.takeException(), isNull);
+    });
+  }
+}

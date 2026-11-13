@@ -7,7 +7,9 @@ import '../models/campaign_summary.dart';
 import '../models/message_intent.dart';
 import '../providers/draft/draft_notifier.dart';
 import '../providers/reference_data/reference_data_providers.dart';
-import '../widgets/app_banner.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_header.dart';
+import '../widgets/content_list.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/loading_view.dart';
 
@@ -79,21 +81,20 @@ class _CampaignsScreenState extends ConsumerState<CampaignsScreen> {
   Widget build(BuildContext context) {
     final campaignsAsync = ref.watch(campaignsProvider);
     final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const AppBanner()),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
+      appBar: const AppHeader(),
+      body: ContentList(
+        verticalPadding: 32,
         children: [
-          Text('Choose a campaign to back.', style: textTheme.headlineSmall),
+          Text('Choose a campaign to back.', style: textTheme.headlineMedium),
           const SizedBox(height: 8),
           Text(
             'Your email goes to your own area councillors, whichever campaign you choose. '
             'You can change it before you send.',
-            style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+            style: textTheme.bodyMedium?.copyWith(color: AppColors.mutedText),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           campaignsAsync.when(
             loading: () => const LoadingView(),
             error: (error, _) => ErrorBanner(
@@ -106,6 +107,7 @@ class _CampaignsScreenState extends ConsumerState<CampaignsScreen> {
                     children: [
                       for (final campaign in campaigns)
                         Card(
+                          margin: const EdgeInsets.only(bottom: 12),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 4),
                             child: Column(

@@ -6,7 +6,8 @@ import '../api/api_exceptions.dart';
 import '../providers/draft/draft_notifier.dart';
 import '../providers/reference_data/reference_data_providers.dart';
 import '../utils/counts.dart';
-import '../widgets/app_banner.dart';
+import '../widgets/app_header.dart';
+import '../widgets/content_width.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/loading_view.dart';
 import '../widgets/step_progress_indicator.dart';
@@ -24,9 +25,11 @@ class LeaPickerScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final leasAsync = ref.watch(leasForCouncilProvider(councilId));
+    // The list spans the window; its content keeps to the reading column.
+    final gutter = ContentWidth.gutter(MediaQuery.sizeOf(context).width);
 
     return Scaffold(
-      appBar: AppBar(title: const AppBanner()),
+      appBar: const AppHeader(),
       body: Column(
         children: [
           const StepProgressIndicator(currentStep: 3, totalSteps: 5, label: 'Select your area'),
@@ -50,7 +53,7 @@ class LeaPickerScreen extends ConsumerWidget {
                 children: [
                   if (leas.isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                      padding: EdgeInsets.fromLTRB(gutter, 8, gutter, 4),
                       child: Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
@@ -64,7 +67,7 @@ class LeaPickerScreen extends ConsumerWidget {
                     ),
                   Expanded(
                     child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      padding: EdgeInsets.symmetric(horizontal: gutter, vertical: 4),
                       itemCount: leas.length,
                       itemBuilder: (context, index) {
                         final lea = leas[index];

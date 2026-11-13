@@ -9,7 +9,8 @@ import '../models/place_match.dart';
 import '../providers/draft/draft_notifier.dart';
 import '../providers/reference_data/reference_data_providers.dart';
 import '../utils/counts.dart';
-import '../widgets/app_banner.dart';
+import '../widgets/app_header.dart';
+import '../widgets/content_width.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/loading_view.dart';
 
@@ -71,17 +72,19 @@ class _FindAreaScreenState extends ConsumerState<FindAreaScreen> {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    // The results list spans the window; everything keeps to the reading column.
+    final gutter = ContentWidth.gutter(MediaQuery.sizeOf(context).width);
 
     return Scaffold(
-      appBar: AppBar(title: const AppBanner()),
+      appBar: const AppHeader(),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Align(alignment: Alignment.centerLeft, child: Text('Find your area', style: textTheme.titleLarge)),
+            padding: EdgeInsets.fromLTRB(gutter, 24, gutter, 8),
+            child: Align(alignment: Alignment.centerLeft, child: Text('Find your area', style: textTheme.headlineSmall)),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: EdgeInsets.symmetric(horizontal: gutter, vertical: 4),
             child: TextField(
               controller: _controller,
               autofocus: true,
@@ -101,7 +104,7 @@ class _FindAreaScreenState extends ConsumerState<FindAreaScreen> {
           ),
           Expanded(child: _results(context)),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+            padding: EdgeInsets.fromLTRB(gutter, 4, gutter, 12),
             child: Text(
               'Place names and area boundaries © Tailte Éireann (CC BY 4.0).',
               style: textTheme.bodySmall?.copyWith(color: muted),
@@ -113,10 +116,14 @@ class _FindAreaScreenState extends ConsumerState<FindAreaScreen> {
     );
   }
 
+  /// The space each side of the content so that it sits in the reading column
+  /// while the list around it spans the window.
+  double _gutter(BuildContext context) => ContentWidth.gutter(MediaQuery.sizeOf(context).width);
+
   Widget _results(BuildContext context) {
     if (_query.length < _minLength) {
       return Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.symmetric(horizontal: _gutter(context), vertical: 24),
         child: Text(
           'Type the town, village or suburb where you live, for example Swords, Rathmines or Athlone. '
           'Just the place name, not your full address.',
@@ -139,7 +146,7 @@ class _FindAreaScreenState extends ConsumerState<FindAreaScreen> {
 
   Widget _noMatch(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.symmetric(horizontal: _gutter(context), vertical: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -159,7 +166,7 @@ class _FindAreaScreenState extends ConsumerState<FindAreaScreen> {
     final style = Theme.of(context).textTheme.bodySmall?.copyWith(color: muted);
 
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: _gutter(context), vertical: 4),
       children: [
         if (found.results.length > 1 && !found.isCutShort)
           Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('Pick the area your address is in.', style: style)),

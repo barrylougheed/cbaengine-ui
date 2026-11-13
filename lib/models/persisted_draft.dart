@@ -10,8 +10,9 @@ import 'topic_summary.dart';
 ///
 /// Written once, just before the email sign-in (which can reload the whole
 /// app on the web), and read once, after it, then deleted. It lives only in the
-/// resident's own browser. Version 3 added the kind of email and the ticked
-/// proposals; a draft saved by an earlier version is ignored.
+/// resident's own browser. Version 4 dropped the ticked proposals (issues have
+/// none now) and changed what the wording ids mean; a draft saved by an earlier
+/// version is ignored, because its wording ids would no longer be accepted.
 class PersistedDraft extends Equatable {
   const PersistedDraft({
     this.councilId,
@@ -20,7 +21,6 @@ class PersistedDraft extends Equatable {
     this.leaName,
     this.intent = MessageIntent.issues,
     this.topicIds = const [],
-    this.proposals = const {},
     this.templateVariants = const {},
     this.senderName = '',
     this.subject = '',
@@ -28,7 +28,7 @@ class PersistedDraft extends Equatable {
     required this.savedAt,
   });
 
-  static const version = 3;
+  static const version = 4;
 
   final String? councilId;
   final String? councilName;
@@ -39,11 +39,8 @@ class PersistedDraft extends Equatable {
   /// The chosen issue ids, or the campaign's id (empty for the resident's own words).
   final List<String> topicIds;
 
-  /// Issue id -> ids of the proposals ticked for it.
-  final Map<String, List<String>> proposals;
-
-  /// The wording shown: issue id -> opener id and "_subject" -> subject id, or
-  /// campaign id -> variant id.
+  /// The wording shown: issue id -> wording id, "_subject" -> subject id and
+  /// "_intro" -> introduction id, or campaign id -> variant id.
   final Map<String, String> templateVariants;
   final String senderName;
   final String subject;
@@ -62,10 +59,6 @@ class PersistedDraft extends Equatable {
       leaName: json['leaName'] as String?,
       intent: MessageIntent.values.byName(json['intent'] as String? ?? MessageIntent.issues.name),
       topicIds: List<String>.from(json['topicIds'] as List<dynamic>? ?? const []),
-      proposals: {
-        for (final entry in (json['proposals'] as Map<String, dynamic>? ?? const {}).entries)
-          entry.key: List<String>.from(entry.value as List<dynamic>),
-      },
       templateVariants: Map<String, String>.from(json['templateVariants'] as Map<String, dynamic>? ?? const {}),
       senderName: json['senderName'] as String? ?? '',
       subject: json['subject'] as String? ?? '',
@@ -83,7 +76,6 @@ class PersistedDraft extends Equatable {
       'leaName': leaName,
       'intent': intent.name,
       'topicIds': topicIds,
-      'proposals': proposals,
       'templateVariants': templateVariants,
       'senderName': senderName,
       'subject': subject,
@@ -100,7 +92,6 @@ class PersistedDraft extends Equatable {
     leaName,
     intent,
     topicIds,
-    proposals,
     templateVariants,
     senderName,
     subject,

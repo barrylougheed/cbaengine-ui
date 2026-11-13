@@ -60,32 +60,28 @@ class DraftNotifier extends Notifier<Draft> {
     state = _withoutContent(state).copyWith(intent: intent);
   }
 
-  /// Sets the chosen [chosen] issues and the proposals [ticked] for each
-  /// (issue id -> proposal ids). Once every chosen issue has a proposal ticked,
-  /// fills the subject, body and footer from the server (replacing whatever
-  /// text there was); until then there is no text. Wording already shown for an
-  /// issue is kept, so ticking and un-ticking never re-rolls it.
+  /// Sets the chosen issues [chosen]. As soon as there is at least one, fills
+  /// the subject, body and footer from the server (replacing whatever text
+  /// there was); with none there is no text. Wording already shown for an issue
+  /// is kept, so choosing and un-choosing never re-rolls it.
   /// Returns null on success, or a message to show the resident.
-  Future<String?> chooseIssues(List<TopicSummary> chosen, Map<String, List<String>> ticked) async {
+  Future<String?> chooseIssues(List<TopicSummary> chosen) async {
     final request = ++_latestComposeRequest;
-    final cleanTicked = {for (final issue in chosen) issue.id: ticked[issue.id] ?? const <String>[]};
-    final complete = chosen.isNotEmpty && chosen.every((issue) => cleanTicked[issue.id]!.isNotEmpty);
-    if (!complete) {
-      state = _withoutText(state).copyWith(issues: chosen, ticked: cleanTicked);
+    if (chosen.isEmpty) {
+      state = _withoutText(state).copyWith(issues: chosen);
       return null;
     }
 
     try {
       final composed = await ref
           .read(apiClientProvider)
-          .composeTopics(selection: cleanTicked, variants: state.templateVariants);
+          .composeTopics(issueIds: [for (final issue in chosen) issue.id], variants: state.templateVariants);
       if (request != _latestComposeRequest) return null; // superseded by a later choice
 
       final byId = {for (final issue in chosen) issue.id: issue};
       state = state.copyWith(
         issues: [for (final id in composed.topics) byId[id]!],
-        ticked: cleanTicked,
-        // Remember all the wording, so un-ticking and re-ticking an issue does not re-roll it.
+        // Remember all the wording, so un-choosing and re-choosing an issue does not re-roll it.
         templateVariants: {...state.templateVariants, ...composed.variants},
         footer: composed.footer,
         subject: composed.subject,
@@ -163,7 +159,6 @@ class DraftNotifier extends Notifier<Draft> {
   Draft _withoutContent(Draft draft) {
     return _withoutText(draft).copyWith(
       issues: const [],
-      ticked: const {},
       clearCampaign: true,
       templateVariants: const {},
     );

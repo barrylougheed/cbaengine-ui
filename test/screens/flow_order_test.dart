@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../support/test_app.dart';
 
-/// The order of the steps: the email first (issues and proposals, your own
+/// The order of the steps: the email first (issues, your own
 /// words, or a campaign), then council, then area, then review. A raw address
 /// cannot skip ahead, and each complete journey ends on Review.
 void main() {
@@ -90,13 +90,12 @@ void main() {
       expect(find.text('Ann One'), findsOneWidget);
     });
 
-    testWidgets('about issues: pick, tick, name -> council -> area -> review, with the footer', (tester) async {
+    testWidgets('about issues: pick, name -> council -> area -> review, with the footer', (tester) async {
       await openApp(tester, api);
 
       await tap(tester, find.text('Craft an email'));
       await tap(tester, find.text('Select issues'));
       await tap(tester, find.text('Housing Crisis'));
-      await tap(tester, find.text('a public register to monitor house bidding'));
       await tester.enterText(find.byType(TextField).at(0), 'Sam Resident');
       await tester.pumpAndSettle();
       await continueOn(tester);

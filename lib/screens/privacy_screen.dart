@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_config.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_header.dart';
+import '../widgets/content_list.dart';
 
 /// The privacy notice (GDPR Articles 12–14), linked from the home screen
 /// and from the consent line above Review's "Connect email and send" button.
@@ -125,20 +128,26 @@ class PrivacyScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
+    // Set as an article: a page heading, an introduction, then each section
+    // under its own heading, in the same reading column as the rest of the flow.
     return Scaffold(
-      appBar: AppBar(title: const Text('Privacy notice')),
+      appBar: const AppHeader(),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+        child: ContentList(
+          verticalPadding: 32,
           children: [
+            Text('Privacy notice', style: textTheme.headlineMedium),
+            const SizedBox(height: 12),
             Text(
               'CBAEngine helps you email your local councillors, and measures how often councillors reply. '
               'This notice explains what happens to your information.',
-              style: textTheme.bodyLarge,
+              style: textTheme.bodyLarge?.copyWith(color: AppColors.mutedText),
             ),
             for (final (heading, paragraphs) in _sections) ...[
+              const SizedBox(height: 16),
+              const Divider(height: 1),
               const SizedBox(height: 24),
-              Text(heading, style: textTheme.titleMedium),
+              Text(heading, style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
               for (final paragraph in paragraphs) ...[
                 const SizedBox(height: 8),
                 Text(paragraph, style: textTheme.bodyMedium),

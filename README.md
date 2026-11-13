@@ -1,7 +1,7 @@
 # cbaengine-ui
 
-The Flutter frontend for [CBAEngine](../CBA) — write an email (tick the proposals you support on the issues
-you care about, write your own, or back a campaign), pick your council and Local Electoral Area, review who
+The Flutter frontend for [CBAEngine](../CBA) — write an email (choose the issues you
+care about, write your own, or back a campaign), pick your council and Local Electoral Area, review who
 it'll reach, and send it through your own connected email account.
 Targets web, Android, and iOS from one codebase.
 
@@ -20,20 +20,23 @@ of email, one per email: about **issues**, in the resident's **own words**, or f
 
 - **Everything up to Review is wired to the live backend** (`GET /topics`, `POST /topics/compose`,
   `GET /campaigns`, `POST /campaigns/{id}/compose`, `GET /councils`, `GET /councils/{id}/leas`) via
-  Riverpod — real issues, proposals, campaigns, councils and areas, and real recipient names and parties on
+  Riverpod — real issues, campaigns, councils and areas, and real recipient names and parties on
   Review (never an email address — that stays server-side until a draft actually exists).
-- The **home screen** has three cards: **Craft an email**, **Campaigns**, and a disabled **Create a
-  campaign link** (Feature 3, not built yet). It says up front that you can send one email a day, how many
-  councillors and councils they can write to, how it works in steps, and that a Gmail, Outlook or Hotmail
-  account is needed to send (so an iCloud or Yahoo user does not find out at the last step).
+- The **home screen** opens with a deep olive hero (the headline "Email your local councillors in minutes" and
+  the tagline) holding three cards: **Craft an email**, **Campaigns**, and a disabled **Create a campaign
+  link** marked "Coming soon" (Feature 3, not built yet). Under it, in large numerals, how many councillors,
+  councils and local areas can be written to (left out if the councils cannot be loaded), then **How it
+  works** in three numbered steps, a panel saying that you can send one email a day and that a Gmail,
+  Outlook or Hotmail account is needed to send (so an iCloud or Yahoo user does not find out at the last
+  step), and a footer saying this is an independent service, not affiliated with the Government of Ireland.
 - **Craft an email** offers two choices: **Select issues** and **Write my own email**.
-- **Select issues** (route `/craft/issues`): tick one or more issues, then tick the proposals you support on
-  each (at least one per issue). The server writes the email (an opening question for each issue, then
-  "Would you support ...?" for each ticked proposal) and it is shown for editing. The resident types
-  **Your name**, which signs off the email. An issue appears only once the owner has written its proposals;
-  with none available the screen says so and offers "Write my own email". A link on the screen,
-  "Disagree with these? Write your own email.", is how someone covers a view the proposals do not.
-  Changing the ticks after editing the text asks "This replaces your edits. Continue?" first.
+- **Select issues** (route `/craft/issues`): choose one or more issues. There is nothing to tick: the server
+  writes the email as soon as an issue is chosen (an opening paragraph naming the issues, then one wording for
+  each) and it is shown for editing. The resident types **Your name**, which signs off the email. An issue
+  appears only once the owner has written its wordings; with none available the screen says so and offers
+  "Write my own email". A link on the screen, "Want to say something different? Write your own email.", is how
+  someone covers a view the issues do not. Changing the choice after editing the text asks "This replaces your
+  edits. Continue?" first.
 - **Write my own email** (route `/craft/own`): the subject and message are the resident's own, plus their
   name. No footer is added.
 - **Campaigns** (routes `/campaigns`, `/campaigns/email`): the list of campaigns the owner has set up, each
@@ -78,6 +81,58 @@ of email, one per email: about **issues**, in the resident's **own words**, or f
   council list), `/craft/own` and `/craft/issues` need the matching choice, and `/campaigns/email` needs a
   campaign chosen. Any `401` from the backend routes to `/reconnect` from anywhere.
 - **Not yet done:** real on-device testing on Android/iOS (see "Prerequisites").
+
+## Look and feel
+
+One **light** theme, whatever the device is set to (`themeMode: ThemeMode.light`, no dark theme), built
+around the logo's olive. All of it is in `lib/theme/app_theme.dart` (`AppColors`, `buildAppTheme()`), and
+every text colour in it is held to WCAG AA contrast (4.5 : 1) by `test/theme/app_theme_test.dart`, so a
+palette change that makes text hard to read fails a test.
+
+| Colour | Hex | Used for |
+|---|---|---|
+| Logo olive | `#748264` | the logo mark only. It is too pale for text or a button with white text (4.1 : 1 on white), and nearly vanishes on deep olive |
+| Deep olive | `#3F4B37` | the hero, footer, buttons, the stepper |
+| Link olive | `#5A6A4C` | links and small icons on white |
+| Soft olive / mist | `#E7ECE0` / `#F4F6F0` | tinted discs, chips and panels |
+| Clay | `#A8502F` | the one accent: a thin rule under the Home hero |
+| Ink / muted | `#20261B` / `#5A6152` | text |
+
+Layout: every screen's content sits in a centred column (720px for the steps, forms and the privacy
+notice; 1040px for Home, the header and the footer) instead of stretching across a wide window, and shrinks to
+the screen with a 16px margin on a phone. The pieces are in `lib/widgets/`:
+
+- `AppHeader`: the white bar with the logo and wordmark (the way back to Home) and a Privacy link; on every screen.
+- `ContentWidth` / `ContentList`: the centred column, for a block of content and for a scrolling list (the list
+  spans the window, so its scrollbar sits at the window edge and the wheel scrolls anywhere; only its margins grow).
+- `StepPage`: the frame of the steps that write or review: header, the five-stage stepper
+  (`StepProgressIndicator`: Write, Council, Area, Review, Send), a scrolling column, and a button bar that
+  stays on screen however long the message is.
+- `ChoiceCard`: the big outlined cards on Home and "Craft an email".
+- `AppFooter`: the olive foot of Home.
+
+Review sets the email out as a letter, then who it goes to (each councillor's initial in an olive disc, with
+their party), then the consent notice.
+
+### Logo
+
+Until the real logo exists, the header shows a placeholder mark (an olive disc with a white envelope,
+`lib/widgets/logo_mark.dart`) and the favicon and app icons are drawn to match. To use the real logo (a PNG
+with a transparent background, at least 512 x 512 pixels):
+
+```bash
+pip install pillow
+python tool/make_icons.py path/to/logo.png
+```
+
+That rebuilds `web/favicon.png` and `web/icons/*.png` from it. Then put the same file in the app (for
+example `assets/logo.png`, listed under `flutter: assets:` in `pubspec.yaml`) and have `LogoMark` draw it with
+`Image.asset`; that one widget is the only place the mark is drawn. Running `python tool/make_icons.py` with no
+file puts the placeholder icons back.
+
+The page title, description, theme colour and install name are in `web/index.html` and `web/manifest.json`
+(the browser tab title is also set by `MaterialApp.title` in `lib/app.dart`, which wins once the app starts,
+so keep the two the same).
 
 ## Decided against: session persistence across app restarts
 

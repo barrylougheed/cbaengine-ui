@@ -21,8 +21,8 @@ const subjectVariantKey = '_subject';
 const introVariantKey = '_intro';
 
 /// The in-progress message the user is building — held in
-/// draftNotifierProvider as the user moves through the email (issues and
-/// proposals, their own words, or a campaign) -> council -> LEA -> review.
+/// draftNotifierProvider as the user moves through the email (issues, their
+/// own words, or a campaign) -> council -> LEA -> review.
 /// Nothing here is sent to the backend until /connect's auto-chain (create ->
 /// confirm -> send) runs, so this is pure client-side state (apart from asking
 /// the server for the text of issues and campaigns).
@@ -32,7 +32,6 @@ class Draft extends Equatable {
     this.lea,
     this.intent = MessageIntent.issues,
     this.issues = const [],
-    this.ticked = const {},
     this.campaign,
     this.templateVariants = const {},
     this.footer,
@@ -53,16 +52,13 @@ class Draft extends Equatable {
   /// The issues chosen (issues email), in the issue list's order.
   final List<TopicSummary> issues;
 
-  /// Issue id -> ids of the proposals ticked for it. An issue that is chosen
-  /// but has nothing ticked yet has an empty list.
-  final Map<String, List<String>> ticked;
-
   /// The campaign chosen (campaign email).
   final CampaignSummary? campaign;
 
-  /// The wording the server chose: issue id -> opener id and "_subject" ->
-  /// subject id (issues), or campaign id -> variant id (campaign). Includes
-  /// ones for issues since un-ticked, so ticking one again does not re-roll it.
+  /// The wording the server chose: issue id -> wording id, "_subject" ->
+  /// subject id and "_intro" -> introduction id (issues), or campaign id ->
+  /// variant id (campaign). Includes ones for issues since un-chosen, so
+  /// choosing one again does not re-roll it.
   final Map<String, String> templateVariants;
 
   /// Added by the server under the sign-off; only for issue and campaign emails.
@@ -90,7 +86,6 @@ class Draft extends Equatable {
     Lea? lea,
     MessageIntent? intent,
     List<TopicSummary>? issues,
-    Map<String, List<String>>? ticked,
     CampaignSummary? campaign,
     bool clearCampaign = false,
     Map<String, String>? templateVariants,
@@ -108,7 +103,6 @@ class Draft extends Equatable {
       lea: clearLea ? null : (lea ?? this.lea),
       intent: intent ?? this.intent,
       issues: issues ?? this.issues,
-      ticked: ticked ?? this.ticked,
       campaign: clearCampaign ? null : (campaign ?? this.campaign),
       templateVariants: templateVariants ?? this.templateVariants,
       footer: clearFooter ? null : (footer ?? this.footer),
@@ -129,12 +123,6 @@ class Draft extends Equatable {
     MessageIntent.campaign => [if (campaign != null) campaign!.id],
   };
 
-  /// The ticked proposals of the chosen issues only: the API rejects any others.
-  Map<String, List<String>> get proposalsInUse {
-    if (intent != MessageIntent.issues) return const {};
-    return {for (final issue in issues) issue.id: ticked[issue.id] ?? const <String>[]};
-  }
-
   /// The wording of what is being sent only: the API rejects any other.
   Map<String, String> get variantsInUse {
     switch (intent) {
@@ -154,9 +142,9 @@ class Draft extends Equatable {
     }
   }
 
-  /// Issues chosen and at least one proposal ticked for each of them: only then
-  /// is there text to show.
-  bool get selectionComplete => issues.isNotEmpty && issues.every((issue) => (ticked[issue.id] ?? const []).isNotEmpty);
+  /// At least one issue chosen: only then is there text to show. (There is
+  /// nothing else to choose: an issue has no proposals to tick.)
+  bool get selectionComplete => issues.isNotEmpty;
 
   /// True when the resident has typed or changed text that would be lost if
   /// the issues, the campaign or the kind of email changed.
@@ -174,7 +162,7 @@ class Draft extends Equatable {
   }
 
   /// What the email is about has been chosen: nothing to choose for the
-  /// resident's own words, proposals ticked for every issue, or a campaign.
+  /// resident's own words, at least one issue, or a campaign.
   bool get hasChosenContent => switch (intent) {
     MessageIntent.own => true,
     MessageIntent.issues => selectionComplete,
@@ -198,7 +186,6 @@ class Draft extends Equatable {
     lea,
     intent,
     issues,
-    ticked,
     campaign,
     templateVariants,
     footer,

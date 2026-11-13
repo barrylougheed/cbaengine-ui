@@ -7,6 +7,8 @@ import 'package:app/models/message_intent.dart';
 import 'package:app/providers/core_providers.dart';
 import 'package:app/providers/message_flow/message_flow_notifier.dart';
 import 'package:app/router.dart';
+import 'package:app/theme/app_theme.dart';
+import 'package:app/widgets/content_width.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -156,5 +158,41 @@ void main() {
     await openResult(tester, messageJson(status: 'sent'));
 
     expect(find.text('Back to start'), findsOneWidget);
+  });
+
+  testWidgets('a sent message is marked with a green-olive tick, in the app success colour', (tester) async {
+    await openResult(tester, messageJson(status: 'sent'));
+
+    final tick = tester.widget<Icon>(find.byIcon(Icons.check_circle_outline));
+    expect(tick.color, AppColors.success);
+    // ...and each councillor it reached has a tick beside their name.
+    final ticks = tester.widgetList<Icon>(find.byIcon(Icons.check_circle));
+    expect(ticks, hasLength(2));
+    expect(ticks.every((icon) => icon.color == AppColors.success), isTrue);
+  });
+
+  testWidgets('a failed message is marked with a red cross', (tester) async {
+    await openResult(tester, messageJson(status: 'failed', detail: 'It did not go.'));
+
+    final cross = tester.widget<Icon>(find.byIcon(Icons.error_outline));
+    expect(cross.color, AppColors.error);
+  });
+
+  testWidgets('on a wide screen the outcome stays in the reading column', (tester) async {
+    await openResult(tester, messageJson(status: 'sent'));
+    tester.view.physicalSize = const Size(1600, 1600);
+    await tester.pumpAndSettle();
+
+    final list = tester.getRect(find.byType(Card).first);
+    expect(list.left, greaterThanOrEqualTo((1600 - ContentWidth.form) / 2 - 0.5));
+    expect(list.right, lessThanOrEqualTo(1600 - (1600 - ContentWidth.form) / 2 + 0.5));
+  });
+
+  testWidgets('on a phone nothing overflows', (tester) async {
+    await openResult(tester, messageJson(status: 'sent'));
+    tester.view.physicalSize = const Size(390, 1600);
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
   });
 }

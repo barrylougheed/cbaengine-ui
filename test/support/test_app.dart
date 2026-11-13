@@ -14,28 +14,14 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// A fake CBAEngine API for screen tests: the issues (with proposals), the
-/// campaigns, composing text for both, and the councils and areas. Each test
+/// A fake CBAEngine API for screen tests: the issues, the campaigns, composing
+/// text for both, and the councils and areas. Each test
 /// changes what it needs (an empty list, a failure) and reads what the app asked.
 class FakeApi {
   /// GET /topics: the issues ready for residents.
   List<Map<String, Object?>> issues = [
-    {
-      'id': 'housing-crisis',
-      'title': 'Housing Crisis',
-      'proposals': [
-        {'id': 'ban-bulk-purchases', 'text': 'a ban on vulture funds bulk purchasing properties'},
-        {'id': 'public-register', 'text': 'a public register to monitor house bidding'},
-      ],
-    },
-    {
-      'id': 'triple-lock',
-      'title': 'Triple Lock',
-      'proposals': [
-        {'id': 'keep-it', 'text': 'keeping the triple lock'},
-        {'id': 'review-it', 'text': 'a review of the triple lock'},
-      ],
-    },
+    {'id': 'housing-crisis', 'title': 'Housing Crisis'},
+    {'id': 'triple-lock', 'title': 'Triple Lock'},
   ];
 
   /// GET /campaigns: the campaigns ready for residents.
@@ -74,20 +60,17 @@ class FakeApi {
       case '/topics/compose':
         final asked = jsonDecode(request.body) as Map<String, dynamic>;
         composeRequests.add(asked);
-        final selection = [for (final topic in asked['topics'] as List) topic as Map<String, dynamic>];
         final pinned = Map<String, String>.from(asked['variants'] as Map);
-        final ids = [for (final topic in selection) topic['id'] as String];
+        final ids = [for (final id in asked['topics'] as List) id as String];
         return json({
           'topics': ids,
           'variants': {
             '_intro': pinned['_intro'] ?? 'open-conversation',
-            for (final id in ids) id: pinned[id] ?? 'view',
+            for (final id in ids) id: pinned[id] ?? 'where-you-stand',
             '_subject': pinned['_subject'] ?? 'stand',
           },
           'subject': 'Where do you stand on ${ids.join(' and ')}?',
-          'body': [
-            for (final topic in selection) 'About ${topic['id']}: ${(topic['proposals'] as List).join(', ')}',
-          ].join('\n\n'),
+          'body': [for (final id in ids) 'About $id.'].join('\n\n'),
           'footer': 'Started from a topic template.',
         });
       case '/campaigns':

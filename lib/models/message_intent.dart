@@ -2,7 +2,7 @@
 /// explicitly when a message is created, and checks the rest of the request
 /// against it.
 enum MessageIntent {
-  /// Asks councillors about chosen issues, and the proposals the resident ticked.
+  /// Raises the issues the resident chose, in wording the server writes.
   issues('issues'),
 
   /// Written entirely by the resident.

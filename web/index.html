@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en-IE">
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -18,19 +18,31 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Email your local councillors in minutes. Pick the issues you care about or write your own message, choose your area, and send it from your own Gmail or Outlook account.">
+
+  <!-- The app is light only, whatever the device is set to. -->
+  <meta name="color-scheme" content="light">
+  <!-- The browser's own bar on a phone: the deep olive of the app's buttons and footer. -->
+  <meta name="theme-color" content="#3F4B37">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="app">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="CBAEngine">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>app</title>
+  <!-- Flutter sets the tab title from MaterialApp.title once it starts (lib/app.dart); keep the two the same. -->
+  <title>CBAEngine - email your local councillors</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    /* What shows while the app downloads: plain white, as the app itself is. */
+    html, body { background: #ffffff; }
+  </style>
 </head>
 <body>
   <!--

@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../support/test_app.dart';
 
 /// Writing your own email: the resident's own subject and message, for views
-/// the issue proposals do not cover. No footer, since nothing here started from
+/// the issues do not cover. No footer, since nothing here started from
 /// a template.
 void main() {
   late FakeApi api;
@@ -37,7 +37,7 @@ void main() {
     await openOwn(tester);
 
     expect(
-      find.text('Say what you think in your own words, including views the issue proposals do not cover.'),
+      find.text('Say what you think in your own words, including views the issues do not cover.'),
       findsOneWidget,
     );
   });

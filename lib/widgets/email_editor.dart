@@ -8,12 +8,11 @@ import '../providers/reference_data/reference_data_providers.dart';
 /// The name, subject and message of the email being written, with what the
 /// server adds around them: shared by the three ways of starting an email
 /// (issues, your own words, a campaign). Edits go straight into the draft; when
-/// the draft's text is replaced from outside (issues ticked, a campaign chosen)
+/// the draft's text is replaced from outside (issues chosen, a campaign chosen)
 /// the fields are refilled.
 ///
 /// With [showText] false only the name is shown: an issues email has no text
-/// until a proposal is ticked for every issue, but the name can be typed at any
-/// point.
+/// until an issue is chosen, but the name can be typed at any point.
 class EmailEditor extends ConsumerStatefulWidget {
   const EmailEditor({super.key, this.showText = true});
 

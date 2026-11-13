@@ -21,7 +21,6 @@ class MessageFlowNotifier extends Notifier<MessageFlowState> {
     required String subject,
     required String body,
     required String senderName,
-    Map<String, List<String>> proposals = const {},
     Map<String, String> templateVariants = const {},
   }) async {
     final apiClient = ref.read(apiClientProvider);
@@ -31,7 +30,6 @@ class MessageFlowNotifier extends Notifier<MessageFlowState> {
         localElectoralArea: localElectoralArea,
         intent: intent,
         topics: topics,
-        proposals: proposals,
         subject: subject,
         body: body,
         senderName: senderName,

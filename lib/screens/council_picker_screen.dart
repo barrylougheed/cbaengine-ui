@@ -6,8 +6,10 @@ import 'package:go_router/go_router.dart';
 import '../models/council.dart';
 import '../providers/draft/draft_notifier.dart';
 import '../providers/reference_data/reference_data_providers.dart';
+import '../theme/app_theme.dart';
 import '../utils/counts.dart';
-import '../widgets/app_banner.dart';
+import '../widgets/app_header.dart';
+import '../widgets/content_width.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/loading_view.dart';
 import '../widgets/step_progress_indicator.dart';
@@ -63,9 +65,12 @@ class _CouncilPickerScreenState extends ConsumerState<CouncilPickerScreen> {
   @override
   Widget build(BuildContext context) {
     final councilsAsync = ref.watch(councilsProvider);
+    // The list spans the window (so its scrollbar sits at the window edge);
+    // everything in it keeps to the reading column.
+    final gutter = ContentWidth.gutter(MediaQuery.sizeOf(context).width);
 
     return Scaffold(
-      appBar: AppBar(title: const AppBanner()),
+      appBar: const AppHeader(),
       body: Column(
         children: [
           const StepProgressIndicator(currentStep: 2, totalSteps: 5, label: 'Select your council'),
@@ -82,10 +87,10 @@ class _CouncilPickerScreenState extends ConsumerState<CouncilPickerScreen> {
                   children: [
                     // For a resident who does not know their council or area.
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      padding: EdgeInsets.fromLTRB(gutter, 8, gutter, 0),
                       child: Card(
                         child: ListTile(
-                          leading: Icon(Icons.place_outlined, color: Theme.of(context).colorScheme.primary),
+                          leading: const Icon(Icons.place_outlined, color: AppColors.linkOlive),
                           title: const Text('Not sure? Find your area'),
                           subtitle: const Text('Enter your town, village or suburb'),
                           trailing: const Icon(Icons.chevron_right),
@@ -94,7 +99,7 @@ class _CouncilPickerScreenState extends ConsumerState<CouncilPickerScreen> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                      padding: EdgeInsets.fromLTRB(gutter, 8, gutter, 4),
                       child: TextField(
                         controller: _searchController,
                         decoration: InputDecoration(
@@ -114,7 +119,7 @@ class _CouncilPickerScreenState extends ConsumerState<CouncilPickerScreen> {
                     ),
                     if (shown.any((council) => council.councillorCount > 0))
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        padding: EdgeInsets.symmetric(horizontal: gutter, vertical: 4),
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
@@ -142,7 +147,7 @@ class _CouncilPickerScreenState extends ConsumerState<CouncilPickerScreen> {
                               thumbVisibility: true,
                               child: ListView.builder(
                                 controller: _scrollController,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                padding: EdgeInsets.symmetric(horizontal: gutter, vertical: 4),
                                 itemCount: shown.length,
                                 itemBuilder: (context, index) {
                                   final council = shown[index];

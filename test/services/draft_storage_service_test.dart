@@ -16,7 +16,7 @@ void main() {
     expect(await service.read(), isNull);
   });
 
-  test('write then read round-trips an email about issues, with its ticked proposals', () async {
+  test('write then read round-trips an email about issues, with the wording shown', () async {
     final draft = PersistedDraft(
       councilId: 'fingal-county-council',
       councilName: 'Fingal County Council',
@@ -24,11 +24,12 @@ void main() {
       leaName: 'Balbriggan',
       intent: MessageIntent.issues,
       topicIds: const ['housing-crisis', 'triple-lock'],
-      proposals: const {
-        'housing-crisis': ['ban-bulk-purchases'],
-        'triple-lock': ['keep-it', 'review-it'],
+      templateVariants: const {
+        '_intro': 'open-conversation',
+        'housing-crisis': 'where-you-stand',
+        'triple-lock': 'real-solutions',
+        '_subject': 'stand',
       },
-      templateVariants: const {'housing-crisis': 'view', 'triple-lock': 'doing', '_subject': 'stand'},
       senderName: 'Sam Resident',
       subject: 'Subject',
       body: 'Body',
@@ -40,7 +41,8 @@ void main() {
 
     expect(read, draft);
     expect(read!.apiTopics, ['housing-crisis', 'triple-lock']);
-    expect(read.proposals['triple-lock'], ['keep-it', 'review-it']);
+    expect(read.templateVariants['triple-lock'], 'real-solutions');
+    expect(read.toJson().containsKey('proposals'), isFalse); // issues have nothing to tick
   });
 
   test('a draft the resident wrote themselves is sent as the "custom" topic', () async {
@@ -58,7 +60,7 @@ void main() {
     final read = await service.read();
     expect(read!.intent, MessageIntent.own);
     expect(read.apiTopics, ['custom']);
-    expect(read.proposals, isEmpty);
+    expect(read.templateVariants, isEmpty);
   });
 
   test('a campaign draft is sent as the campaign id with the variant shown', () async {
@@ -113,6 +115,19 @@ void main() {
           '{"version":2,"leaId":"fingal-balbriggan","mode":"topics","topicIds":["housing-crisis"],'
           '"templateVariants":{"housing-crisis":"v1"},"senderName":"Sam","subject":"S","body":"B",'
           '"savedAt":"2026-01-01T00:00:00.000Z"}',
+    });
+    service = DraftStorageService(await SharedPreferences.getInstance());
+
+    expect(await service.read(), isNull);
+  });
+
+  test('a draft saved while issues still had proposals (version 3) is ignored, as its wording ids are gone', () async {
+    SharedPreferences.setMockInitialValues({
+      'cbaengine.draft.v1':
+          '{"version":3,"leaId":"fingal-balbriggan","intent":"issues","topicIds":["housing-crisis"],'
+          '"proposals":{"housing-crisis":["public-register-of-house-bidding"]},'
+          '"templateVariants":{"housing-crisis":"doing","_subject":"stand","_intro":"open-conversation"},'
+          '"senderName":"Sam","subject":"S","body":"B","savedAt":"2026-01-01T00:00:00.000Z"}',
     });
     service = DraftStorageService(await SharedPreferences.getInstance());
 

@@ -7,13 +7,10 @@ import '../models/message_status.dart';
 import '../providers/draft/draft_notifier.dart';
 import '../providers/message_flow/message_flow_notifier.dart';
 import '../providers/message_flow/message_flow_state.dart';
+import '../theme/app_theme.dart';
 import '../utils/counts.dart';
-import '../widgets/app_banner.dart';
-
-// A considered green rather than Material's stock (fairly dated-looking)
-// `Colors.green` — Material 3 has no built-in "success" color role, so
-// this is deliberately picked to sit well against the themed palette.
-const _successColor = Color(0xFF16A34A);
+import '../widgets/app_header.dart';
+import '../widgets/content_width.dart';
 
 /// Step 6, terminal: renders MessageRecord.status/.detail verbatim
 /// against the backend's exact wording — sent, failed, or partial
@@ -28,10 +25,13 @@ class ResultScreen extends ConsumerWidget {
     final state = ref.watch(messageFlowNotifierProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const AppBanner()),
+      appBar: const AppHeader(),
+      // Centred in the window, in the same reading column as the steps before it.
       body: Center(
         child: SingleChildScrollView(
-          child: Padding(padding: const EdgeInsets.all(24), child: _body(context, ref, state)),
+          child: ContentWidth(
+            child: Padding(padding: const EdgeInsets.symmetric(vertical: 32), child: _body(context, ref, state)),
+          ),
         ),
       ),
     );
@@ -51,9 +51,9 @@ class ResultScreen extends ConsumerWidget {
           MessageFlowResult(:final record) when record.status == MessageStatus.sent => Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const _AnimatedOutcomeIcon(icon: Icons.check_circle_outline, color: _successColor),
+              const _AnimatedOutcomeIcon(icon: Icons.check_circle_outline, color: AppColors.success),
               const SizedBox(height: 16),
-              Text('Your message was sent.', style: Theme.of(context).textTheme.titleLarge),
+              Text('Your message was sent.', style: Theme.of(context).textTheme.headlineSmall),
               const SizedBox(height: 24),
               _SentTo(record),
             ],
@@ -63,7 +63,7 @@ class ResultScreen extends ConsumerWidget {
             children: [
               _AnimatedOutcomeIcon(icon: Icons.error_outline, color: Theme.of(context).colorScheme.error),
               const SizedBox(height: 16),
-              Text('Your message could not be sent.', style: Theme.of(context).textTheme.titleLarge),
+              Text('Your message could not be sent.', style: Theme.of(context).textTheme.headlineSmall),
               const SizedBox(height: 8),
               if (record.detail != null) Text(record.detail!, textAlign: TextAlign.center),
             ],
@@ -110,26 +110,31 @@ class _SentTo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final mutedColor = Theme.of(context).colorScheme.onSurfaceVariant;
 
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 480),
+    // As wide as the column (the screen's Column would otherwise shrink it to
+    // its widest line).
+    return SizedBox(
+      width: double.infinity,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           if (record.councillors.isNotEmpty) ...[
-            Text('Sent to ${countOf(record.councillors.length, 'councillor')}', style: textTheme.titleSmall),
-            const SizedBox(height: 8),
+            Text(
+              'Sent to ${countOf(record.councillors.length, 'councillor')}',
+              style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 12),
             Card(
+              margin: EdgeInsets.zero,
               clipBehavior: Clip.antiAlias,
               child: Column(
                 children: [
                   for (final (index, councillor) in record.councillors.indexed) ...[
                     if (index > 0) const Divider(height: 1, indent: 16, endIndent: 16),
                     ListTile(
-                      leading: const Icon(Icons.check_circle, color: _successColor, size: 20),
-                      title: Text(councillor.name),
+                      leading: const Icon(Icons.check_circle, color: AppColors.success, size: 24),
+                      title: Text(councillor.name, style: const TextStyle(fontWeight: FontWeight.w600)),
                       subtitle: Text(councillor.party),
                     ),
                   ],
@@ -140,7 +145,7 @@ class _SentTo extends StatelessWidget {
           ],
           Text(
             'A copy has been sent to ${record.sender}, and any replies will come to that inbox.',
-            style: textTheme.bodyMedium?.copyWith(color: mutedColor),
+            style: textTheme.bodyMedium?.copyWith(color: AppColors.mutedText),
           ),
         ],
       ),

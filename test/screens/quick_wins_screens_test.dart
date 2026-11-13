@@ -147,25 +147,33 @@ void main() {
       );
     });
 
-    testWidgets('says how many councillors and councils you can write to', (
+    testWidgets('says how many councillors, councils and areas you can write to', (
       tester,
     ) async {
       await open(tester);
 
-      expect(
-        find.text('Write to any of 81 councillors across 2 councils.'),
-        findsOneWidget,
+      // 18 + 63 councillors, 2 councils, 3 + 11 areas (see the fake API above).
+      // Looked for inside the strip, as the step numbers 1 to 3 are also on Home.
+      Finder inStrip(String text) => find.descendant(
+        of: find.byKey(const Key('home-stats')),
+        matching: find.text(text),
       );
+      expect(inStrip('81'), findsOneWidget);
+      expect(inStrip('councillors'), findsOneWidget);
+      expect(inStrip('2'), findsOneWidget);
+      expect(inStrip('councils'), findsOneWidget);
+      expect(inStrip('14'), findsOneWidget);
+      expect(inStrip('local areas'), findsOneWidget);
     });
 
     testWidgets(
-      'still works, without the total, if the councils cannot be loaded',
+      'still works, without the totals, if the councils cannot be loaded',
       (tester) async {
         councilsFail = true;
         await open(tester);
 
         expect(find.text('How it works'), findsOneWidget);
-        expect(find.textContaining('Write to any of'), findsNothing);
+        expect(find.byKey(const Key('home-stats')), findsNothing);
       },
     );
   });

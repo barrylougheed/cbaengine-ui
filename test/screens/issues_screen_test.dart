@@ -5,13 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../support/test_app.dart';
 
-/// The issues step: choose issues, tick the proposals you support, and the
-/// server writes a first draft you can edit. The text only appears once every
-/// chosen issue has a proposal ticked. Nothing here needs an area.
+/// The issues step: choose issues and the server writes a first draft you can
+/// edit. There is nothing to tick: the text appears as soon as an issue is
+/// chosen. Nothing here needs an area.
 void main() {
-  const ban = 'a ban on vulture funds bulk purchasing properties';
-  const register = 'a public register to monitor house bidding';
-
   late FakeApi api;
 
   setUp(() => api = FakeApi());
@@ -24,54 +21,46 @@ void main() {
 
   Future<void> openIssues(WidgetTester tester) => openApp(tester, api, path: '/craft/issues');
 
-  Future<void> tick(WidgetTester tester, String label) async {
+  Future<void> choose(WidgetTester tester, String label) async {
     await tester.tap(find.text(label));
     await tester.pumpAndSettle();
   }
 
-  testWidgets('lists the issues, with no proposals showing until an issue is chosen', (tester) async {
+  testWidgets('lists the issues, with no draft until one is chosen', (tester) async {
     await openIssues(tester);
 
     expect(find.text('Housing Crisis'), findsOneWidget);
     expect(find.text('Triple Lock'), findsOneWidget);
-    expect(find.text(ban), findsNothing);
     expect(find.text('Choose an issue to get started.'), findsOneWidget);
+    expect(find.widgetWithText(TextField, 'Subject'), findsNothing);
     expect(continueEnabled(tester), isFalse);
   });
 
-  testWidgets('says what ticking a proposal does', (tester) async {
+  testWidgets('says what the draft will do', (tester) async {
     await openIssues(tester);
 
-    expect(find.textContaining('Each councillor will be asked whether they would support'), findsOneWidget);
+    expect(find.textContaining('asks each councillor what they are doing about it'), findsOneWidget);
   });
 
-  testWidgets('choosing an issue shows its proposals, and there is still no draft', (tester) async {
+  testWidgets('there is nothing to tick: just the issues are listed, before and after choosing one', (tester) async {
     await openIssues(tester);
+    expect(find.byType(CheckboxListTile), findsNWidgets(2));
 
-    await tick(tester, 'Housing Crisis');
+    await choose(tester, 'Housing Crisis');
 
-    expect(find.text(ban), findsOneWidget);
-    expect(find.text(register), findsOneWidget);
-    expect(find.text('Tick at least one proposal for each issue to see your email.'), findsOneWidget);
-    expect(api.composeRequests, isEmpty);
-    expect(find.widgetWithText(TextField, 'Subject'), findsNothing);
+    expect(find.byType(CheckboxListTile), findsNWidgets(2));
+    expect(find.textContaining('proposal'), findsNothing);
   });
 
-  testWidgets('ticking a proposal fills in the draft, asking the server with no area', (tester) async {
+  testWidgets('choosing an issue fills in the draft at once, asking the server with no area', (tester) async {
     await openIssues(tester);
-    await tick(tester, 'Housing Crisis');
 
-    await tick(tester, ban);
+    await choose(tester, 'Housing Crisis');
 
     expect(text(tester, 1), 'Where do you stand on housing-crisis?');
-    expect(text(tester, 2), 'About housing-crisis: ban-bulk-purchases');
+    expect(text(tester, 2), 'About housing-crisis.');
     expect(api.composeRequests.single, {
-      'topics': [
-        {
-          'id': 'housing-crisis',
-          'proposals': ['ban-bulk-purchases'],
-        },
-      ],
+      'topics': ['housing-crisis'],
       'variants': <String, String>{},
     });
     expect(find.textContaining('Started from a topic template.'), findsOneWidget);
@@ -80,8 +69,7 @@ void main() {
 
   testWidgets('the name is still needed before continuing', (tester) async {
     await openIssues(tester);
-    await tick(tester, 'Housing Crisis');
-    await tick(tester, ban);
+    await choose(tester, 'Housing Crisis');
     expect(continueEnabled(tester), isFalse);
 
     await tester.enterText(find.byType(TextField).at(0), 'Sam Resident');
@@ -90,86 +78,50 @@ void main() {
     expect(continueEnabled(tester), isTrue);
   });
 
-  testWidgets('every chosen issue needs a proposal ticked: a second issue with none hides the draft again', (
-    tester,
-  ) async {
+  testWidgets('choosing a second issue writes one draft for both, in the list order', (tester) async {
     await openIssues(tester);
-    await tick(tester, 'Housing Crisis');
-    await tick(tester, ban);
-    expect(find.widgetWithText(TextField, 'Subject'), findsOneWidget);
+    await choose(tester, 'Triple Lock');
 
-    await tick(tester, 'Triple Lock');
+    await choose(tester, 'Housing Crisis');
 
-    expect(find.widgetWithText(TextField, 'Subject'), findsNothing);
-    expect(find.text('Tick at least one proposal for each issue to see your email.'), findsOneWidget);
-    expect(continueEnabled(tester), isFalse);
-
-    await tick(tester, 'keeping the triple lock');
-
-    expect(api.composeRequests.last['topics'], [
-      {
-        'id': 'housing-crisis',
-        'proposals': ['ban-bulk-purchases'],
-      },
-      {
-        'id': 'triple-lock',
-        'proposals': ['keep-it'],
-      },
-    ]);
+    expect(api.composeRequests.last['topics'], ['housing-crisis', 'triple-lock']);
     expect(text(tester, 1), 'Where do you stand on housing-crisis and triple-lock?');
+    expect(text(tester, 2), 'About housing-crisis.\n\nAbout triple-lock.');
   });
 
-  testWidgets('the wording already shown is sent back so ticking more does not change it', (tester) async {
+  testWidgets('the wording already shown is sent back so choosing another issue does not change it', (tester) async {
     await openIssues(tester);
-    await tick(tester, 'Housing Crisis');
-    await tick(tester, ban);
+    await choose(tester, 'Housing Crisis');
 
-    await tick(tester, register);
+    await choose(tester, 'Triple Lock');
 
     expect(api.composeRequests.last['variants'], {
       '_intro': 'open-conversation',
-      'housing-crisis': 'view',
+      'housing-crisis': 'where-you-stand',
       '_subject': 'stand',
     });
-    expect(api.composeRequests.last['topics'], [
-      {
-        'id': 'housing-crisis',
-        'proposals': ['ban-bulk-purchases', 'public-register'],
-      },
-    ]);
+    expect(api.composeRequests.last['topics'], ['housing-crisis', 'triple-lock']);
   });
 
-  testWidgets('un-ticking the only proposal takes the draft away again', (tester) async {
-    await openIssues(tester);
-    await tick(tester, 'Housing Crisis');
-    await tick(tester, ban);
+  testWidgets('un-choosing the only issue takes the draft away again', (tester) async {
+    final container = await openApp(tester, api, path: '/craft/issues');
+    await choose(tester, 'Housing Crisis');
 
-    await tick(tester, ban);
+    await choose(tester, 'Housing Crisis');
 
     expect(find.widgetWithText(TextField, 'Subject'), findsNothing);
-    expect(find.text('Tick at least one proposal for each issue to see your email.'), findsOneWidget);
-  });
-
-  testWidgets('un-choosing an issue hides its proposals and drops its ticks', (tester) async {
-    final container = await openApp(tester, api, path: '/craft/issues');
-    await tick(tester, 'Housing Crisis');
-    await tick(tester, ban);
-
-    await tick(tester, 'Housing Crisis');
-
-    expect(find.text(ban), findsNothing);
+    expect(find.text('Choose an issue to get started.'), findsOneWidget);
     expect(container.read(draftNotifierProvider).issues, isEmpty);
-    expect(container.read(draftNotifierProvider).ticked, isEmpty);
+    expect(continueEnabled(tester), isFalse);
   });
 
-  testWidgets('changing the ticks after an edit asks first, and Cancel keeps the edit', (tester) async {
+  testWidgets('changing the issues after an edit asks first, and Cancel keeps the edit', (tester) async {
     await openIssues(tester);
-    await tick(tester, 'Housing Crisis');
-    await tick(tester, ban);
+    await choose(tester, 'Housing Crisis');
     await tester.enterText(find.byType(TextField).at(2), 'My own words instead.');
     await tester.pumpAndSettle();
 
-    await tick(tester, register);
+    await choose(tester, 'Triple Lock');
     expect(find.text('This replaces your edits. Continue?'), findsOneWidget);
     await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Cancel')));
     await tester.pumpAndSettle();
@@ -180,22 +132,20 @@ void main() {
 
   testWidgets('confirming replaces the edit with the new draft', (tester) async {
     await openIssues(tester);
-    await tick(tester, 'Housing Crisis');
-    await tick(tester, ban);
+    await choose(tester, 'Housing Crisis');
     await tester.enterText(find.byType(TextField).at(2), 'My own words instead.');
     await tester.pumpAndSettle();
 
-    await tick(tester, register);
+    await choose(tester, 'Triple Lock');
     await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Continue')));
     await tester.pumpAndSettle();
 
-    expect(text(tester, 2), 'About housing-crisis: ban-bulk-purchases, public-register');
+    expect(text(tester, 2), 'About housing-crisis.\n\nAbout triple-lock.');
   });
 
   testWidgets('text left in double square brackets is flagged and blocks continuing', (tester) async {
     await openIssues(tester);
-    await tick(tester, 'Housing Crisis');
-    await tick(tester, ban);
+    await choose(tester, 'Housing Crisis');
     await tester.enterText(find.byType(TextField).at(0), 'Sam Resident');
     await tester.pumpAndSettle();
     expect(continueEnabled(tester), isTrue);
@@ -209,8 +159,7 @@ void main() {
 
   testWidgets('Continue opens the council step', (tester) async {
     await openIssues(tester);
-    await tick(tester, 'Housing Crisis');
-    await tick(tester, ban);
+    await choose(tester, 'Housing Crisis');
     await tester.enterText(find.byType(TextField).at(0), 'Sam Resident');
     await tester.pumpAndSettle();
 
@@ -262,11 +211,11 @@ void main() {
     });
   });
 
-  testWidgets('points anyone who disagrees with the proposals to writing their own email', (tester) async {
+  testWidgets('points anyone who wants to say something different to writing their own email', (tester) async {
     final container = await openApp(tester, api, path: '/craft/issues');
 
-    expect(find.text('Disagree with these? Write your own email.'), findsOneWidget);
-    await tester.tap(find.text('Disagree with these? Write your own email.'));
+    expect(find.text('Want to say something different? Write your own email.'), findsOneWidget);
+    await tester.tap(find.text('Want to say something different? Write your own email.'));
     await tester.pumpAndSettle();
 
     expect(container.read(draftNotifierProvider).intent, MessageIntent.own);

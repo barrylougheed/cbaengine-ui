@@ -3,14 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/draft/draft_notifier.dart';
+import 'logo_mark.dart';
 
 /// The app's persistent brand mark — top-left on every screen, the same
 /// place most web services (Gmail, GitHub, Notion, ...) put a logo that
 /// doubles as the link back to the start, rather than a separate icon
-/// tucked in the corner. Sits in the AppBar's `title` slot, immediately
-/// after the automatic back arrow when there's one — the theme already
-/// left-aligns titles (`centerTitle: false`), so no extra positioning
-/// work is needed to land it top-left.
+/// tucked in the corner. It is the left of AppHeader: the olive logo mark
+/// and the CBAEngine wordmark.
 ///
 /// Consistency principle: identical on every screen, including the
 /// terminal Result/Reconnect screens — always the same place, always
@@ -20,7 +19,6 @@ class AppBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
     // Already home: tapping the brand mark is a no-op on every site that
     // has one, not a chance to "lose" a draft that isn't being navigated
     // away from — skip the confirmation dialog entirely rather than
@@ -35,11 +33,15 @@ class AppBanner extends ConsumerWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.forum_outlined, color: colorScheme.primary, size: 22),
-            const SizedBox(width: 8),
-            Text(
-              'CBAEngine',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            const LogoMark(),
+            const SizedBox(width: 10),
+            Flexible(
+              child: Text(
+                'CBAEngine',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
             ),
           ],
         ),
