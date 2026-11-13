@@ -52,19 +52,22 @@ class ApiClient {
     return _decode(response, (json) => TopicCatalogue.fromJson(json as Map<String, dynamic>));
   }
 
-  /// The subject and body for the chosen issues ([issueIds]). Public (no
+  /// The subject and body for the chosen issues ([issueIds]), written in the
+  /// letter [style] (a style id from [getTopics]; left out, the server keeps the
+  /// style of the wording already held, or uses its default). Public (no
   /// sign-in) and needs no area: the text never names it, and the resident
   /// reads and edits it before they connect their email. [variants] are wording
   /// already shown (issue id -> wording id, "_subject" -> subject id and
-  /// "_intro" -> introduction id): the server keeps them and picks at random
-  /// only for the rest.
+  /// "_intro" -> introduction id): the server keeps them, except a wording in a
+  /// different style from the one asked for, and picks at random for the rest.
   Future<ComposedTopics> composeTopics({
     required List<String> issueIds,
+    String? style,
     Map<String, String> variants = const {},
   }) async {
     final response = await _postPublic(
       _uri('/topics/compose'),
-      jsonBody: jsonEncode({'topics': issueIds, 'variants': variants}),
+      jsonBody: jsonEncode({'topics': issueIds, 'style': ?style, 'variants': variants}),
     );
     return _decode(response, (json) => ComposedTopics.fromJson(json as Map<String, dynamic>));
   }

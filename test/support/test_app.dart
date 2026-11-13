@@ -14,15 +14,37 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// A fake CBAEngine API for screen tests: the issues, the campaigns, composing
-/// text for both, and the councils and areas. Each test
-/// changes what it needs (an empty list, a failure) and reads what the app asked.
+/// A fake CBAEngine API for screen tests: the categories, issues and letter
+/// styles, the campaigns, composing text for issues and campaigns, and the
+/// councils and areas. Each test changes what it needs (an empty list, a
+/// failure) and reads what the app asked.
 class FakeApi {
-  /// GET /topics: the issues ready for residents.
+  /// GET /topics: the issues ready for residents, alphabetically by title.
   List<Map<String, Object?>> issues = [
-    {'id': 'housing-crisis', 'title': 'Housing Crisis'},
-    {'id': 'triple-lock', 'title': 'Triple Lock'},
+    {'id': 'homelessness', 'title': 'Homelessness', 'category': 'housing'},
+    {'id': 'housing-crisis', 'title': 'Housing Crisis', 'category': 'housing'},
+    {'id': 'triple-lock', 'title': 'Triple Lock', 'category': 'geopolitics'},
   ];
+
+  /// GET /topics: the categories that have an issue ready, in the owner's order.
+  List<Map<String, Object?>> categories = [
+    {'id': 'housing', 'title': 'Housing'},
+    {'id': 'geopolitics', 'title': 'Geopolitics'},
+  ];
+
+  /// GET /topics: the letter styles, in display order (the first is the default).
+  List<Map<String, Object?>> styles = [
+    {'id': 'formal-direct', 'title': 'Formal & Direct', 'description': 'Respectful and to the point.'},
+    {'id': 'passionate-urgent', 'title': 'Passionate & Urgent', 'description': 'Strong feeling, and a call to act now.'},
+    {'id': 'community-focused', 'title': 'Community Focused', 'description': 'How the issue affects your community.'},
+    {'id': 'solution-oriented', 'title': 'Solution-Oriented', 'description': 'Asks for a clear plan.'},
+    {'id': 'disappointed-concerned', 'title': 'Disappointed & Concerned', 'description': 'Worry for the future.'},
+    {'id': 'factual-data-driven', 'title': 'Factual & Data-Driven', 'description': 'Calm, with the facts.'},
+  ];
+
+  /// Makes composing an issue email fail with this message (a 422), as the
+  /// server does when too many topics were chosen.
+  String? issueComposeFails;
 
   /// GET /campaigns: the campaigns ready for residents.
   List<Map<String, Object?>> campaigns = [
@@ -55,20 +77,27 @@ class FakeApi {
         if (topicsFail) return json({'detail': 'down'}, 500);
         return json({
           'topics': issues,
+          'categories': categories,
+          'styles': styles,
           'email_layout': {'greeting_format': 'Hi {name},', 'sign_off': 'Kind regards,'},
         });
       case '/topics/compose':
         final asked = jsonDecode(request.body) as Map<String, dynamic>;
         composeRequests.add(asked);
+        if (issueComposeFails != null) return json({'detail': issueComposeFails}, 422);
         final pinned = Map<String, String>.from(asked['variants'] as Map);
         final ids = [for (final id in asked['topics'] as List) id as String];
+        final style = asked['style'] as String? ?? 'formal-direct';
         return json({
           'topics': ids,
+          // In this fake a wording is named after its style, so the ids sent
+          // back and forth show which style the text is in.
           'variants': {
             '_intro': pinned['_intro'] ?? 'open-conversation',
-            for (final id in ids) id: pinned[id] ?? 'where-you-stand',
+            for (final id in ids) id: style,
             '_subject': pinned['_subject'] ?? 'stand',
           },
+          'style': style,
           'subject': 'Where do you stand on ${ids.join(' and ')}?',
           'body': [for (final id in ids) 'About $id.'].join('\n\n'),
           'footer': 'Started from a topic template.',
@@ -170,4 +199,27 @@ void finishedOwnWordsEmail(DraftNotifier draft) {
     ..setSenderName('Sam Resident')
     ..setSubject('My subject')
     ..setBody('My message.');
+}
+
+/// Walks the issues flow the way a resident does, to leave the app on the
+/// editor with text written: category -> topics -> style -> editor. Returns
+/// with the editor open. Uses the FakeApi's first category and its first topic.
+Future<void> walkToTheIssueEmail(
+  WidgetTester tester, {
+  String category = 'Housing',
+  List<String> topics = const ['Housing Crisis'],
+  String style = 'Formal & Direct',
+}) async {
+  await tester.tap(find.text(category));
+  await tester.pumpAndSettle();
+  for (final topic in topics) {
+    await tester.tap(find.text(topic));
+    await tester.pumpAndSettle();
+  }
+  await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(style));
+  await tester.pumpAndSettle();
+  await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+  await tester.pumpAndSettle();
 }

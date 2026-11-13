@@ -9,6 +9,7 @@ import '../../models/councillor_preview.dart';
 import '../../models/draft.dart';
 import '../../models/lea.dart';
 import '../../models/message_intent.dart';
+import '../../models/style_summary.dart';
 import '../../models/topic_summary.dart';
 import '../core_providers.dart';
 
@@ -60,27 +61,42 @@ class DraftNotifier extends Notifier<Draft> {
     state = _withoutContent(state).copyWith(intent: intent);
   }
 
-  /// Sets the chosen issues [chosen]. As soon as there is at least one, fills
-  /// the subject, body and footer from the server (replacing whatever text
-  /// there was); with none there is no text. Wording already shown for an issue
-  /// is kept, so choosing and un-choosing never re-rolls it.
+  /// Sets the chosen issues [chosen]. This only records the choice: the server
+  /// is asked for text when a letter style is chosen (see [chooseStyle]), so
+  /// ticking issues costs no request. Any text already written was for the old
+  /// choice, so it is taken away (the screen asks first when the resident has
+  /// edited it); the style chosen stays, and so does the wording already shown
+  /// for an issue, so choosing and un-choosing never re-rolls it.
+  void setIssues(List<TopicSummary> chosen) {
+    _latestComposeRequest++; // an answer still on its way was for the old choice
+    state = _withoutText(state).copyWith(issues: chosen);
+  }
+
+  /// Chooses the letter [style] and fills the subject, body and footer from the
+  /// server, written in it for the issues chosen (replacing whatever text there
+  /// was). Wording already shown is sent back: the server keeps what is in the
+  /// style asked for and chooses again for the rest. With no issue chosen there
+  /// is nothing to write, and the server is not asked.
   /// Returns null on success, or a message to show the resident.
-  Future<String?> chooseIssues(List<TopicSummary> chosen) async {
+  Future<String?> chooseStyle(StyleSummary style) async {
+    final chosen = state.issues;
+    if (chosen.isEmpty) return null;
     final request = ++_latestComposeRequest;
-    if (chosen.isEmpty) {
-      state = _withoutText(state).copyWith(issues: chosen);
-      return null;
-    }
 
     try {
       final composed = await ref
           .read(apiClientProvider)
-          .composeTopics(issueIds: [for (final issue in chosen) issue.id], variants: state.templateVariants);
+          .composeTopics(
+            issueIds: [for (final issue in chosen) issue.id],
+            style: style.id,
+            variants: state.templateVariants,
+          );
       if (request != _latestComposeRequest) return null; // superseded by a later choice
 
       final byId = {for (final issue in chosen) issue.id: issue};
       state = state.copyWith(
         issues: [for (final id in composed.topics) byId[id]!],
+        style: style,
         // Remember all the wording, so un-choosing and re-choosing an issue does not re-roll it.
         templateVariants: {...state.templateVariants, ...composed.variants},
         footer: composed.footer,
@@ -159,6 +175,7 @@ class DraftNotifier extends Notifier<Draft> {
   Draft _withoutContent(Draft draft) {
     return _withoutText(draft).copyWith(
       issues: const [],
+      clearStyle: true,
       clearCampaign: true,
       templateVariants: const {},
     );

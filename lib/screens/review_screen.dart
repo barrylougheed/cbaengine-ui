@@ -55,6 +55,9 @@ class ReviewScreen extends ConsumerWidget {
           MessageIntent.issues => 'Issues: ${draft.issues.map((issue) => issue.title).join(', ')}',
           MessageIntent.campaign => 'Campaign: ${draft.campaign?.title ?? ''}',
         }, style: textTheme.bodySmall?.copyWith(color: AppColors.mutedText)),
+        // An issues email also says which letter style it is written in.
+        if (draft.intent == MessageIntent.issues && draft.style != null)
+          Text('Style: ${draft.style!.title}', style: textTheme.bodySmall?.copyWith(color: AppColors.mutedText)),
         const SizedBox(height: 16),
         // The letter: roomier than the other cards, as it is what is being sent.
         Card(

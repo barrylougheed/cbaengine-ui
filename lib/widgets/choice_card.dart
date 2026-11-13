@@ -17,6 +17,7 @@ class ChoiceCard extends StatelessWidget {
     required this.subtitle,
     this.badge,
     this.onTap,
+    this.compact = false,
   });
 
   final IconData icon;
@@ -26,6 +27,10 @@ class ChoiceCard extends StatelessWidget {
   /// A small label shown instead of the arrow, e.g. "Coming soon".
   final String? badge;
   final VoidCallback? onTap;
+
+  /// For a card that shares a row with others (a grid of them): the same
+  /// content, with less space round it, so two or three fit across a column.
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -40,8 +45,10 @@ class ChoiceCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(compact ? 14 : 20),
           child: Column(
+            // As tall as its content, not as tall as the space it is put in.
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // A Wrap rather than a Row: with a large text size or a narrow
@@ -64,7 +71,7 @@ class ChoiceCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: compact ? 10 : 16),
               Text(
                 title,
                 style: textTheme.titleMedium?.copyWith(

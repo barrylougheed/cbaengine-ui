@@ -8,18 +8,21 @@ import 'providers/auth/auth_state.dart';
 import 'providers/draft/draft_notifier.dart';
 import 'screens/campaign_email_screen.dart';
 import 'screens/campaigns_screen.dart';
+import 'screens/categories_screen.dart';
 import 'screens/connect_email_screen.dart';
 import 'screens/council_picker_screen.dart';
 import 'screens/craft_screen.dart';
 import 'screens/find_area_screen.dart';
 import 'screens/home_screen.dart';
-import 'screens/issues_screen.dart';
+import 'screens/issue_email_screen.dart';
 import 'screens/lea_picker_screen.dart';
 import 'screens/own_email_screen.dart';
 import 'screens/privacy_screen.dart';
 import 'screens/reconnect_screen.dart';
 import 'screens/result_screen.dart';
 import 'screens/review_screen.dart';
+import 'screens/style_screen.dart';
+import 'screens/topics_screen.dart';
 
 /// Bridges authNotifierProvider's changes into something GoRouter can
 /// listen to — without this, `redirect` only re-runs on an active
@@ -63,7 +66,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       // incorrectly bounce that legitimate return trip away.
       final draft = ref.read(draftNotifierProvider);
       if (goingTo == '/craft/own' && draft.intent != MessageIntent.own) return '/craft';
-      if (goingTo == '/craft/issues' && draft.intent != MessageIntent.issues) return '/craft';
+      // The issues flow: category -> topics -> style -> the text. Each screen
+      // needs what the one before it produced.
+      if (goingTo.startsWith('/craft/issues') && draft.intent != MessageIntent.issues) return '/craft';
+      if (goingTo == '/craft/issues/style' && draft.issues.isEmpty) return '/craft/issues';
+      if (goingTo == '/craft/issues/email' && (!draft.selectionComplete || draft.composedBody.isEmpty)) {
+        return '/craft/issues';
+      }
       if (goingTo == '/campaigns/email' && draft.campaign == null) return '/campaigns';
 
       // The council and area come after the email: it has to be finished first.
@@ -78,7 +87,13 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
       GoRoute(path: '/craft', builder: (context, state) => const CraftScreen()),
-      GoRoute(path: '/craft/issues', builder: (context, state) => const IssuesScreen()),
+      GoRoute(path: '/craft/issues', builder: (context, state) => const CategoriesScreen()),
+      GoRoute(
+        path: '/craft/issues/category/:categoryId',
+        builder: (context, state) => TopicsScreen(categoryId: state.pathParameters['categoryId']!),
+      ),
+      GoRoute(path: '/craft/issues/style', builder: (context, state) => const StyleScreen()),
+      GoRoute(path: '/craft/issues/email', builder: (context, state) => const IssueEmailScreen()),
       GoRoute(path: '/craft/own', builder: (context, state) => const OwnEmailScreen()),
       GoRoute(path: '/campaigns', builder: (context, state) => const CampaignsScreen()),
       GoRoute(path: '/campaigns/email', builder: (context, state) => const CampaignEmailScreen()),

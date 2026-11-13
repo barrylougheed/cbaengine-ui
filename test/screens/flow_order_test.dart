@@ -90,24 +90,32 @@ void main() {
       expect(find.text('Ann One'), findsOneWidget);
     });
 
-    testWidgets('about issues: pick, name -> council -> area -> review, with the footer', (tester) async {
-      await openApp(tester, api);
+    testWidgets(
+      'about issues: category -> topic -> style -> name -> council -> area -> review, with the footer',
+      (tester) async {
+        await openApp(tester, api);
 
-      await tap(tester, find.text('Craft an email'));
-      await tap(tester, find.text('Select issues'));
-      await tap(tester, find.text('Housing Crisis'));
-      await tester.enterText(find.byType(TextField).at(0), 'Sam Resident');
-      await tester.pumpAndSettle();
-      await continueOn(tester);
-      await tap(tester, find.text('Fingal County Council'));
-      await tap(tester, find.text('Castleknock'));
+        await tap(tester, find.text('Craft an email'));
+        await tap(tester, find.text('Select issues'));
+        await tap(tester, find.text('Housing')); // the category
+        await tap(tester, find.text('Housing Crisis'));
+        await continueOn(tester);
+        await tap(tester, find.text('Passionate & Urgent'));
+        await continueOn(tester);
+        await tester.enterText(find.byType(TextField).at(0), 'Sam Resident');
+        await tester.pumpAndSettle();
+        await continueOn(tester);
+        await tap(tester, find.text('Fingal County Council'));
+        await tap(tester, find.text('Castleknock'));
 
-      expect(find.textContaining('Step 4 of 5'), findsOneWidget);
-      expect(find.text('Where do you stand on housing-crisis?'), findsOneWidget);
-      expect(find.text('Issues: Housing Crisis'), findsOneWidget);
-      expect(find.text('Started from a topic template.'), findsOneWidget);
-      expect(find.text('This will be sent to 1 councillor'), findsOneWidget);
-    });
+        expect(find.textContaining('Step 4 of 5'), findsOneWidget);
+        expect(find.text('Where do you stand on housing-crisis?'), findsOneWidget);
+        expect(find.text('Issues: Housing Crisis'), findsOneWidget);
+        expect(find.text('Style: Passionate & Urgent'), findsOneWidget);
+        expect(find.text('Started from a topic template.'), findsOneWidget);
+        expect(find.text('This will be sent to 1 councillor'), findsOneWidget);
+      },
+    );
 
     testWidgets('for a campaign: pick -> name -> council -> area -> review, with the campaign footer', (tester) async {
       await openApp(tester, api);

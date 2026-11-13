@@ -30,13 +30,24 @@ of email, one per email: about **issues**, in the resident's **own words**, or f
   Outlook or Hotmail account is needed to send (so an iCloud or Yahoo user does not find out at the last
   step), and a footer saying this is an independent service, not affiliated with the Government of Ireland.
 - **Craft an email** offers two choices: **Select issues** and **Write my own email**.
-- **Select issues** (route `/craft/issues`): choose one or more issues. There is nothing to tick: the server
-  writes the email as soon as an issue is chosen (an opening paragraph naming the issues, then one wording for
-  each) and it is shown for editing. The resident types **Your name**, which signs off the email. An issue
-  appears only once the owner has written its wordings; with none available the screen says so and offers
-  "Write my own email". A link on the screen, "Want to say something different? Write your own email.", is how
-  someone covers a view the issues do not. Changing the choice after editing the text asks "This replaces your
-  edits. Continue?" first.
+- **Select issues** is four screens, all step 1 of 5, shaped after letters.contactyourtd.ie:
+  1. **Choose a category** (`/craft/issues`): a grid of tiles, one per category the server sends (only those
+     with a finished issue, in the owner's order, reading across then down), three across where there is room and
+     two on a phone, each with an icon and how many topics it has. The link "Want to say something different?
+     Write your own email." is how someone covers a view the issues do not.
+  2. **Choose a topic** (`/craft/issues/category/:id`): tick one or more topics. Ticking only records the choice
+     (no request), the choice is kept when going back to add a topic from another category, and "You have chosen:
+     ..." says what is picked.
+  3. **Choose a letter style** (`/craft/issues/style`): six cards (Formal & Direct, Passionate & Urgent, Community
+     Focused, Solution-Oriented, Disappointed & Concerned, Factual & Data-Driven), each with a one-line
+     description, one chosen. Continue asks the server to write the email in that style, for the topics
+     chosen (an opening paragraph naming the topics, then one wording for each).
+  4. **Write your message** (`/craft/issues/email`): the text, shown for editing, under a summary of the topics and
+     style with "Change topics" and "Change style". The resident types **Your name**, which signs off the email.
+
+  With no topic finished yet the first screen says so and offers "Write my own email". Changing the topics or the
+  style after editing the text asks "This replaces your edits. Continue?" first; carrying on with the same
+  choices goes straight to the editor and keeps the edits. Review also says which style the email is in.
 - **Write my own email** (route `/craft/own`): the subject and message are the resident's own, plus their
   name. No footer is added.
 - **Campaigns** (routes `/campaigns`, `/campaigns/email`): the list of campaigns the owner has set up, each
@@ -78,8 +89,8 @@ of email, one per email: about **issues**, in the resident's **own words**, or f
   auth/message-flow notifiers are all unit-tested** (`flutter test`).
 - Router guards prevent skipping steps via a raw URL: the council, area and Review screens need a finished
   email first (a raw `/review` with no email bounces back to Home, and with an email but no area to the
-  council list), `/craft/own` and `/craft/issues` need the matching choice, and `/campaigns/email` needs a
-  campaign chosen. Any `401` from the backend routes to `/reconnect` from anywhere.
+  council list), `/craft/own` and everything under `/craft/issues` need the matching choice (and the style screen
+  needs a topic, and the editor needs the text written), and `/campaigns/email` needs a campaign chosen. Any `401` from the backend routes to `/reconnect` from anywhere.
 - **Not yet done:** real on-device testing on Android/iOS (see "Prerequisites").
 
 ## Look and feel

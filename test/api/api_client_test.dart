@@ -99,12 +99,21 @@ void main() {
   });
 
   group('getTopics', () {
-    test('returns the issues with their titles, and the email layout, on 200', () async {
+    test('returns the issues with their titles and categories, the categories and styles, and the email layout, on 200', () async {
       when(() => httpClient.get(Uri.parse('http://localhost:8000/topics'))).thenAnswer(
         (_) async => jsonResponse({
           'topics': [
-            {'id': 'housing-crisis', 'title': 'Housing Crisis'},
-            {'id': 'homelessness', 'title': 'Homelessness'},
+            {'id': 'housing-crisis', 'title': 'Housing Crisis', 'category': 'housing'},
+            {'id': 'homelessness', 'title': 'Homelessness', 'category': 'housing'},
+            {'id': 'triple-lock', 'title': 'Triple Lock', 'category': 'geopolitics'},
+          ],
+          'categories': [
+            {'id': 'housing', 'title': 'Housing'},
+            {'id': 'geopolitics', 'title': 'Geopolitics'},
+          ],
+          'styles': [
+            {'id': 'formal-direct', 'title': 'Formal & Direct', 'description': 'Respectful and to the point.'},
+            {'id': 'passionate-urgent', 'title': 'Passionate & Urgent', 'description': 'Strong feeling.'},
           ],
           'email_layout': {'greeting_format': 'Hi {name},', 'sign_off': 'Kind regards,'},
         }, 200),
@@ -112,8 +121,16 @@ void main() {
 
       final catalogue = await client.getTopics();
 
-      expect(catalogue.topics.map((t) => t.id), ['housing-crisis', 'homelessness']);
-      expect(catalogue.topics.map((t) => t.title), ['Housing Crisis', 'Homelessness']);
+      expect(catalogue.topics.map((t) => t.id), ['housing-crisis', 'homelessness', 'triple-lock']);
+      expect(catalogue.topics.map((t) => t.title), ['Housing Crisis', 'Homelessness', 'Triple Lock']);
+      expect(catalogue.topics.map((t) => t.category), ['housing', 'housing', 'geopolitics']);
+      expect(catalogue.categories.map((c) => c.title), ['Housing', 'Geopolitics']); // in the server's order
+      expect(catalogue.styles.map((s) => s.id), ['formal-direct', 'passionate-urgent']);
+      expect(catalogue.styles.first.title, 'Formal & Direct');
+      expect(catalogue.styles.first.description, 'Respectful and to the point.');
+      expect(catalogue.topicsIn('housing').map((t) => t.id), ['housing-crisis', 'homelessness']);
+      expect(catalogue.topicsIn('geopolitics').map((t) => t.id), ['triple-lock']);
+      expect(catalogue.topicsIn('nothing-here'), isEmpty);
       expect(catalogue.emailLayout.greetingFor('Conor Dowling'), 'Hi Conor Dowling,');
       expect(catalogue.emailLayout.signOff, 'Kind regards,');
     });
@@ -122,11 +139,16 @@ void main() {
       when(() => httpClient.get(Uri.parse('http://localhost:8000/topics'))).thenAnswer(
         (_) async => jsonResponse({
           'topics': <Object>[],
+          'categories': <Object>[],
+          'styles': <Object>[],
           'email_layout': {'greeting_format': 'Hi {name},', 'sign_off': 'Kind regards,'},
         }, 200),
       );
 
-      expect((await client.getTopics()).topics, isEmpty);
+      final catalogue = await client.getTopics();
+
+      expect(catalogue.topics, isEmpty);
+      expect(catalogue.categories, isEmpty);
     });
   });
 
@@ -139,6 +161,7 @@ void main() {
         'triple-lock': 'real-solutions',
         '_subject': 'stand',
       },
+      'style': 'passionate-urgent',
       'subject': 'Where do you stand on Housing Crisis and Triple Lock?',
       'body': 'Housing Crisis\nWhere do you stand on the housing crisis?',
       'footer': 'Started from a CBA topic template.',
@@ -183,6 +206,37 @@ void main() {
         'topics': ['housing-crisis', 'triple-lock'],
         'variants': {'housing-crisis': 'where-you-stand'},
       });
+    });
+
+    test('sends the letter style asked for, and says which style the text is in', () async {
+      stubCompose(jsonResponse(composedJson, 200));
+
+      final composed = await client.composeTopics(
+        issueIds: ['housing-crisis', 'triple-lock'],
+        style: 'passionate-urgent',
+        variants: {'housing-crisis': 'passionate-urgent'},
+      );
+
+      expect(composed.style, 'passionate-urgent');
+      final captured = verify(
+        () => httpClient.post(
+          Uri.parse('http://localhost:8000/topics/compose'),
+          headers: any(named: 'headers'),
+          body: captureAny(named: 'body'),
+        ),
+      ).captured;
+      expect(jsonDecode(captured.single as String), {
+        'topics': ['housing-crisis', 'triple-lock'],
+        'style': 'passionate-urgent',
+        'variants': {'housing-crisis': 'passionate-urgent'},
+      });
+    });
+
+    test('a campaign\'s text, which has no style, parses with none', () async {
+      final withoutStyle = {...composedJson}..remove('style');
+      stubCompose(jsonResponse(withoutStyle, 200));
+
+      expect((await client.composeTopics(issueIds: ['housing-crisis'])).style, isNull);
     });
 
     test('throws NotFoundException on 404 (an issue that is not available)', () async {

@@ -71,6 +71,23 @@ void main() {
     expect(arrow.left - icon.right, greaterThan(100)); // not tucked in beside the icon (the card is 400 wide)
   });
 
+  testWidgets('a compact card keeps everything but sits closer to its edge, and is shorter', (tester) async {
+    await show(tester, ChoiceCard(icon: Icons.edit_outlined, title: 'Craft', subtitle: 'Write it.', onTap: () {}));
+    final regularHeight = tester.getRect(find.byType(Card)).height;
+
+    await show(
+      tester,
+      ChoiceCard(icon: Icons.edit_outlined, title: 'Craft', subtitle: 'Write it.', compact: true, onTap: () {}),
+    );
+
+    final card = tester.getRect(find.byType(Card));
+    expect(find.text('Craft'), findsOneWidget);
+    expect(find.text('Write it.'), findsOneWidget);
+    expect(find.byIcon(Icons.arrow_forward), findsOneWidget);
+    expect(card.right - tester.getRect(find.byIcon(Icons.arrow_forward)).right, closeTo(14, 1)); // 14, not 20
+    expect(card.height, lessThan(regularHeight));
+  });
+
   testWidgets('puts the badge at the right-hand end too', (tester) async {
     await show(
       tester,

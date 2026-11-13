@@ -4,6 +4,7 @@ import 'campaign_summary.dart';
 import 'council.dart';
 import 'lea.dart';
 import 'message_intent.dart';
+import 'style_summary.dart';
 import 'topic_summary.dart';
 
 /// The text the server marks as still to be filled in. The API refuses any
@@ -32,6 +33,7 @@ class Draft extends Equatable {
     this.lea,
     this.intent = MessageIntent.issues,
     this.issues = const [],
+    this.style,
     this.campaign,
     this.templateVariants = const {},
     this.footer,
@@ -51,6 +53,11 @@ class Draft extends Equatable {
 
   /// The issues chosen (issues email), in the issue list's order.
   final List<TopicSummary> issues;
+
+  /// The letter style chosen for an issues email: the tone the server writes
+  /// every chosen issue in. It stays when the issues change (so the style screen
+  /// can offer it again), and the text is written when it is chosen.
+  final StyleSummary? style;
 
   /// The campaign chosen (campaign email).
   final CampaignSummary? campaign;
@@ -86,6 +93,8 @@ class Draft extends Equatable {
     Lea? lea,
     MessageIntent? intent,
     List<TopicSummary>? issues,
+    StyleSummary? style,
+    bool clearStyle = false,
     CampaignSummary? campaign,
     bool clearCampaign = false,
     Map<String, String>? templateVariants,
@@ -103,6 +112,7 @@ class Draft extends Equatable {
       lea: clearLea ? null : (lea ?? this.lea),
       intent: intent ?? this.intent,
       issues: issues ?? this.issues,
+      style: clearStyle ? null : (style ?? this.style),
       campaign: clearCampaign ? null : (campaign ?? this.campaign),
       templateVariants: templateVariants ?? this.templateVariants,
       footer: clearFooter ? null : (footer ?? this.footer),
@@ -142,9 +152,9 @@ class Draft extends Equatable {
     }
   }
 
-  /// At least one issue chosen: only then is there text to show. (There is
-  /// nothing else to choose: an issue has no proposals to tick.)
-  bool get selectionComplete => issues.isNotEmpty;
+  /// At least one issue and a letter style chosen: only then is there text to
+  /// show. (There is nothing else to choose.)
+  bool get selectionComplete => issues.isNotEmpty && style != null;
 
   /// True when the resident has typed or changed text that would be lost if
   /// the issues, the campaign or the kind of email changed.
@@ -186,6 +196,7 @@ class Draft extends Equatable {
     lea,
     intent,
     issues,
+    style,
     campaign,
     templateVariants,
     footer,

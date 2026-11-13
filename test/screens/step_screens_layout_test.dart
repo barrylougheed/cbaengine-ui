@@ -2,6 +2,7 @@ import 'package:app/models/council.dart';
 import 'package:app/models/councillor_preview.dart';
 import 'package:app/models/lea.dart';
 import 'package:app/models/message_intent.dart';
+import 'package:app/models/topic_summary.dart';
 import 'package:app/providers/draft/draft_notifier.dart';
 import 'package:app/widgets/content_width.dart';
 import 'package:flutter/material.dart';
@@ -59,11 +60,36 @@ void main() {
       >[
         (name: 'Craft an email', path: '/craft', prepare: null, after: null, content: () => cardWith('Select issues')),
         (
-          name: 'Select issues',
+          name: 'Choose a category',
           path: '/craft/issues',
           prepare: null,
           after: null,
+          content: () => cardWith('Housing'),
+        ),
+        (
+          name: 'Choose a topic',
+          path: '/craft/issues/category/housing',
+          prepare: null,
+          after: null,
           content: () => find.byType(Card).first,
+        ),
+        (
+          name: 'Choose a letter style',
+          path: '/craft/issues/style',
+          // The style screen needs topics chosen (the router sends a visit without any back).
+          prepare: (draft) => draft.setIssues(const [
+            TopicSummary(id: 'homelessness', title: 'Homelessness', category: 'housing'),
+          ]),
+          after: null,
+          content: () => cardWith('Formal & Direct'),
+        ),
+        (
+          name: 'Write an issues email',
+          path: '/craft/issues',
+          prepare: null,
+          // Walked to as a resident does: the editor needs text the server wrote.
+          after: (tester) => walkToTheIssueEmail(tester),
+          content: () => find.widgetWithText(TextField, 'Subject'),
         ),
         (
           name: 'Write my own email',

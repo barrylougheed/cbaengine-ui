@@ -191,14 +191,16 @@ void main() {
       expect(find.text('Say what you think in your own words.'), findsOneWidget);
     });
 
-    testWidgets('Select issues starts an email about issues and opens the issues step', (tester) async {
+    testWidgets('Select issues starts an email about issues and opens the choice of category', (tester) async {
       final container = await openApp(tester, api, path: '/craft');
 
       await tester.tap(find.text('Select issues'));
       await tester.pumpAndSettle();
 
       expect(container.read(draftNotifierProvider).intent, MessageIntent.issues);
-      expect(find.text('Housing Crisis'), findsOneWidget);
+      expect(find.text('Choose a category'), findsOneWidget);
+      expect(find.text('Housing'), findsOneWidget);
+      expect(find.text('Housing Crisis'), findsNothing); // the topics come after the category
     });
 
     testWidgets('Write my own email starts an email in your own words and opens that step', (tester) async {
