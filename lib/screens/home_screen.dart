@@ -4,10 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/reference_data/reference_data_providers.dart';
 import '../theme/app_theme.dart';
-import '../widgets/app_footer.dart';
 import '../widgets/app_header.dart';
 import '../widgets/choice_card.dart';
 import '../widgets/content_width.dart';
+import '../widgets/footer_scroll.dart';
 
 /// The app's true root: reached before any specific flow starts.
 ///
@@ -42,36 +42,21 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: const AppHeader(),
-      // The page scrolls. Its content is at least as tall as the window, and
-      // the footer is spread to the bottom of that, so on a tall screen the
-      // footer sits at the foot of the window and on a short one it simply
-      // follows the content. (SliverFillRemaining would do this too, but it
-      // measures its child's intrinsic height, which ContentWidth's
-      // LayoutBuilder cannot give.)
-      body: LayoutBuilder(
-        builder: (context, viewport) => SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: viewport.maxHeight),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _Hero(textTheme: textTheme),
-                    // The one warm accent: a thin clay rule under the hero.
-                    const SizedBox(height: 4, child: ColoredBox(color: AppColors.clay)),
-                    if (councillors > 0) _Stats(councillors: councillors, councils: councils.length, areas: areas),
-                    _HowItWorks(textTheme: textTheme),
-                    const _Notes(),
-                    const SizedBox(height: 48),
-                  ],
-                ),
-                const AppFooter(),
-              ],
-            ),
-          ),
+      // The page scrolls, and ends with the footer: on a tall screen the footer
+      // sits at the foot of the window and on a short one it follows the
+      // content (every screen does this; see FooterScroll).
+      body: FooterScroll(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _Hero(textTheme: textTheme),
+            // The one warm accent: a thin clay rule under the hero.
+            const SizedBox(height: 4, child: ColoredBox(color: AppColors.clay)),
+            if (councillors > 0) _Stats(councillors: councillors, councils: councils.length, areas: areas),
+            _HowItWorks(textTheme: textTheme),
+            const _Notes(),
+            const SizedBox(height: 48),
+          ],
         ),
       ),
     );

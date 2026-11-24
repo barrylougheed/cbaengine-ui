@@ -38,9 +38,9 @@ of email, one per email: about **issues**, in the resident's **own words**, or f
   2. **Choose a topic** (`/craft/issues/category/:id`): tick one or more topics. Ticking only records the choice
      (no request), the choice is kept when going back to add a topic from another category, and "You have chosen:
      ..." says what is picked.
-  3. **Choose a letter style** (`/craft/issues/style`): six cards (Formal & Direct, Passionate & Urgent, Community
-     Focused, Solution-Oriented, Disappointed & Concerned, Factual & Data-Driven), each with a one-line
-     description, one chosen. Continue asks the server to write the email in that style, for the topics
+  3. **Choose a letter style** (`/craft/issues/style`): six cards in ascending order (Communal, Concerned,
+     Data-driven, Direct, Solution-based, Urgent), each with a one-line description, one chosen. The server
+     sends the styles and their order. Continue asks the server to write the email in that style, for the topics
      chosen (an opening paragraph naming the topics, then one wording for each).
   4. **Write your message** (`/craft/issues/email`): the text, shown for editing, under a summary of the topics and
      style with "Change topics" and "Change style". The resident types **Your name**, which signs off the email.
@@ -102,7 +102,8 @@ palette change that makes text hard to read fails a test.
 
 | Colour | Hex | Used for |
 |---|---|---|
-| Logo olive | `#748264` | the logo mark only. It is too pale for text or a button with white text (4.1 : 1 on white), and nearly vanishes on deep olive |
+| Brand green / cream | `#2C3F33` / `#F6F3E9` | the logos: green on white (the header), cream on deep olive (the footer). They are the brand's own colours, darker than the olive the theme is built on |
+| Logo olive | `#748264` | the colour the placeholder logo had (`AppColors.logoOlive`). The real logo is the brand green above, so nothing draws this any more |
 | Deep olive | `#3F4B37` | the hero, footer, buttons, the stepper |
 | Link olive | `#5A6A4C` | links and small icons on white |
 | Soft olive / mist | `#E7ECE0` / `#F4F6F0` | tinted discs, chips and panels |
@@ -113,33 +114,53 @@ Layout: every screen's content sits in a centred column (720px for the steps, fo
 notice; 1040px for Home, the header and the footer) instead of stretching across a wide window, and shrinks to
 the screen with a 16px margin on a phone. The pieces are in `lib/widgets/`:
 
-- `AppHeader`: the white bar with the logo and wordmark (the way back to Home) and a Privacy link; on every screen.
-- `ContentWidth` / `ContentList`: the centred column, for a block of content and for a scrolling list (the list
+- `AppHeader`: the white bar with the sloth icon (`LogoMark`) and the CBAEngine name (the way back to Home); on
+  every screen. It has no links of its own: the privacy notice is linked from the footer (below), and from the
+  consent panel on the Review screen.
+- `ContentWidth` / `ContentList`: the centred column, for a block of content and for a scrolling page (the page
   spans the window, so its scrollbar sits at the window edge and the wheel scrolls anywhere; only its margins grow).
 - `StepPage`: the frame of the steps that write or review: header, the five-stage stepper
   (`StepProgressIndicator`: Write, Council, Area, Review, Send), a scrolling column, and a button bar that
   stays on screen however long the message is.
 - `ChoiceCard`: the big outlined cards on Home and "Craft an email".
-- `AppFooter`: the olive foot of Home.
+- `AppFooter`: the olive foot of every screen, with the cream sloth wordmark (`BrandWordmark`), the independence
+  statement and the link to the privacy notice (the privacy notice itself leaves the link out).
+- `FooterScroll`: a scrolling page that ends with the footer. The footer follows the content, and when the
+  content is short it sits at the foot of the window instead of floating half way up it; `centered: true` puts a
+  short message (Result, Reconnect, a spinner) in the middle of the space above it. `ContentList` (so every
+  `StepPage`, Craft, Campaigns and the privacy notice), Home, the council and area lists, Find your area, Result
+  and Reconnect all use it. The buttons that move on are in a bar outside the scrolling, so Continue stays in
+  reach. On the council and area lists the footer is at the end of the list, under a search box and heading that
+  stay put; a screen that only shows a blank frame while the router sends the visitor elsewhere has none.
 
 Review sets the email out as a letter, then who it goes to (each councillor's initial in an olive disc, with
 their party), then the consent notice.
 
 ### Logo
 
-Until the real logo exists, the header shows a placeholder mark (an olive disc with a white envelope,
-`lib/widgets/logo_mark.dart`) and the favicon and app icons are drawn to match. To use the real logo (a PNG
-with a transparent background, at least 512 x 512 pixels):
+The brand logos (the sloth icon, a sloth curled into a "C", and the sloth wordmark, "CBA" with the sloth as the
+C) are in `assets/brand/`, in two colours each: `sloth_icon_green.png` and `sloth_wordmark_green.png` for white,
+`sloth_icon_cream.png` and `sloth_wordmark_cream.png` for the deep olive. They are drawn in two places:
+
+- `LogoMark` (`lib/widgets/logo_mark.dart`): the sloth icon in the header, 40px tall, beside the name.
+- `BrandWordmark` (`lib/widgets/brand_wordmark.dart`): the wordmark in the footer, in cream.
+
+Both take a `BrandTone` (`green` or `cream`) for the background they sit on.
+
+The files in the brand folder (`CBA-docs/brandAssets`) are A4-sized canvases with a wide transparent margin, so
+`assets/brand/` holds cropped, smaller copies (about 200 KB in all). If the artwork changes, rebuild them, and the
+favicon and install icons, from the brand folder:
 
 ```bash
 pip install pillow
-python tool/make_icons.py path/to/logo.png
+python tool/make_brand_assets.py "C:\path\to\CBA_BrandAssets"
+python tool/make_icons.py
 ```
 
-That rebuilds `web/favicon.png` and `web/icons/*.png` from it. Then put the same file in the app (for
-example `assets/logo.png`, listed under `flutter: assets:` in `pubspec.yaml`) and have `LogoMark` draw it with
-`Image.asset`; that one widget is the only place the mark is drawn. Running `python tool/make_icons.py` with no
-file puts the placeholder icons back.
+`make_icons.py` writes `web/favicon.png` and `web/icons/*.png`: the green sloth on a cream tile, so it shows on a
+dark browser tab and a dark home screen (a green logo on a transparent background would vanish there, and iOS
+fills transparent icons with black). The brand folder also has black and white versions, the "CBA" wordmark
+without the sloth and a hand icon; none is used yet.
 
 The page title, description, theme colour and install name are in `web/index.html` and `web/manifest.json`
 (the browser tab title is also set by `MaterialApp.title` in `lib/app.dart`, which wins once the app starts,

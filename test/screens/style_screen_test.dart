@@ -17,16 +17,8 @@ void main() {
   late FakeApi api;
   const homelessness = TopicSummary(id: 'homelessness', title: 'Homelessness', category: 'housing');
   const lock = TopicSummary(id: 'triple-lock', title: 'Triple Lock', category: 'geopolitics');
-  const formal = StyleSummary(
-    id: 'formal-direct',
-    title: 'Formal & Direct',
-    description: 'Respectful and to the point.',
-  );
-  const passionate = StyleSummary(
-    id: 'passionate-urgent',
-    title: 'Passionate & Urgent',
-    description: 'Strong feeling, and a call to act now.',
-  );
+  const direct = StyleSummary(id: 'direct', title: 'Direct', description: 'Respectful and to the point.');
+  const urgent = StyleSummary(id: 'urgent', title: 'Urgent', description: 'Strong feeling, and a call to act now.');
 
   setUp(() => api = FakeApi());
 
@@ -56,22 +48,12 @@ void main() {
     await openStyles(tester);
 
     expect(find.text('Choose a letter style'), findsWidgets);
-    for (final title in [
-      'Formal & Direct',
-      'Passionate & Urgent',
-      'Community Focused',
-      'Solution-Oriented',
-      'Disappointed & Concerned',
-      'Factual & Data-Driven',
-    ]) {
+    for (final title in ['Direct', 'Urgent', 'Communal', 'Solution-based', 'Concerned', 'Data-driven']) {
       expect(find.text(title), findsOneWidget);
     }
     expect(find.text('Respectful and to the point.'), findsOneWidget);
     expect(find.text('Strong feeling, and a call to act now.'), findsOneWidget);
-    expect(
-      tester.getTopLeft(find.text('Formal & Direct')).dy,
-      lessThan(tester.getTopLeft(find.text('Passionate & Urgent')).dy),
-    );
+    expect(tester.getTopLeft(find.text('Direct')).dy, lessThan(tester.getTopLeft(find.text('Urgent')).dy));
   });
 
   testWidgets('says this is step 1 of 5, and which topics the email is about', (tester) async {
@@ -92,17 +74,17 @@ void main() {
   testWidgets('choosing a style marks it, and allows continuing, without asking the server yet', (tester) async {
     await openStyles(tester);
 
-    await tester.tap(find.text('Passionate & Urgent'));
+    await tester.tap(find.text('Urgent'));
     await tester.pumpAndSettle();
 
-    expect(chosenStyle(tester), 'passionate-urgent');
+    expect(chosenStyle(tester), 'urgent');
     expect(continueEnabled(tester), isTrue);
     expect(api.composeRequests, isEmpty);
   });
 
   testWidgets('Continue writes the text in that style, then opens the editor', (tester) async {
     final container = await openStyles(tester, chosen: const [homelessness, lock]);
-    await tester.tap(find.text('Passionate & Urgent'));
+    await tester.tap(find.text('Urgent'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
@@ -110,20 +92,20 @@ void main() {
 
     expect(api.composeRequests.single, {
       'topics': ['homelessness', 'triple-lock'],
-      'style': 'passionate-urgent',
+      'style': 'urgent',
       'variants': <String, String>{},
     });
     final draft = container.read(draftNotifierProvider);
-    expect(draft.style, passionate);
+    expect(draft.style, urgent);
     expect(draft.body, 'About homelessness.\n\nAbout triple-lock.');
     expect(find.widgetWithText(TextField, 'Subject'), findsOneWidget); // the editor
   });
 
   group('coming back to this screen', () {
-    /// A draft with text written in the formal style, as it is after the editor.
+    /// A draft with text written in the direct style, as it is after the editor.
     Future<ProviderContainer> openAfterWriting(WidgetTester tester) async {
       final container = await openApp(tester, api, prepare: (draft) => draft.setIssues(const [homelessness]));
-      await container.read(draftNotifierProvider.notifier).chooseStyle(formal);
+      await container.read(draftNotifierProvider.notifier).chooseStyle(direct);
       unawaited(container.read(routerProvider).push('/craft/issues/style'));
       await tester.pumpAndSettle();
       return container;
@@ -132,7 +114,7 @@ void main() {
     testWidgets('shows the style the text is in as chosen', (tester) async {
       await openAfterWriting(tester);
 
-      expect(chosenStyle(tester), 'formal-direct');
+      expect(chosenStyle(tester), 'direct');
       expect(continueEnabled(tester), isTrue);
     });
 
@@ -154,14 +136,14 @@ void main() {
     testWidgets('changing the style writes the text again, with no question if it was not edited', (tester) async {
       final container = await openAfterWriting(tester);
 
-      await tester.tap(find.text('Passionate & Urgent'));
+      await tester.tap(find.text('Urgent'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
       await tester.pumpAndSettle();
 
       expect(find.byType(AlertDialog), findsNothing);
-      expect(api.composeRequests.last['style'], 'passionate-urgent');
-      expect(container.read(draftNotifierProvider).style, passionate);
+      expect(api.composeRequests.last['style'], 'urgent');
+      expect(container.read(draftNotifierProvider).style, urgent);
     });
 
     testWidgets('changing the style after an edit asks first, and Cancel keeps the edit', (tester) async {
@@ -169,7 +151,7 @@ void main() {
       container.read(draftNotifierProvider.notifier).setBody('My own words instead.');
       final requestsBefore = api.composeRequests.length;
 
-      await tester.tap(find.text('Passionate & Urgent'));
+      await tester.tap(find.text('Urgent'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
       await tester.pumpAndSettle();
@@ -179,14 +161,14 @@ void main() {
 
       expect(api.composeRequests, hasLength(requestsBefore));
       expect(container.read(draftNotifierProvider).body, 'My own words instead.');
-      expect(container.read(draftNotifierProvider).style, formal);
+      expect(container.read(draftNotifierProvider).style, direct);
     });
 
     testWidgets('confirming replaces the edit with text in the new style', (tester) async {
       final container = await openAfterWriting(tester);
       container.read(draftNotifierProvider.notifier).setBody('My own words instead.');
 
-      await tester.tap(find.text('Passionate & Urgent'));
+      await tester.tap(find.text('Urgent'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
       await tester.pumpAndSettle();
@@ -194,7 +176,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final draft = container.read(draftNotifierProvider);
-      expect(draft.style, passionate);
+      expect(draft.style, urgent);
       expect(draft.body, 'About homelessness.');
       expect(draft.hasEditedText, isFalse);
     });
@@ -231,7 +213,7 @@ void main() {
   testWidgets('if the text cannot be written, says so, stays here, and can try again', (tester) async {
     api.issueComposeFails = 'Too many topics for one email. Please choose fewer.';
     await openStyles(tester);
-    await tester.tap(find.text('Formal & Direct'));
+    await tester.tap(find.text('Direct'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
@@ -252,6 +234,6 @@ void main() {
     await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Formal & Direct'), findsOneWidget);
+    expect(find.text('Direct'), findsOneWidget);
   });
 }

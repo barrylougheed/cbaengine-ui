@@ -13,11 +13,7 @@ import '../support/test_app.dart';
 /// a topic from another category.
 void main() {
   late FakeApi api;
-  const formal = StyleSummary(
-    id: 'formal-direct',
-    title: 'Formal & Direct',
-    description: 'Respectful and to the point.',
-  );
+  const direct = StyleSummary(id: 'direct', title: 'Direct', description: 'Respectful and to the point.');
   const homelessness = TopicSummary(id: 'homelessness', title: 'Homelessness', category: 'housing');
 
   setUp(() => api = FakeApi());
@@ -156,7 +152,7 @@ void main() {
     Future<ProviderContainer> openWithEditedText(WidgetTester tester) async {
       final container = await openHousing(tester);
       final notifier = container.read(draftNotifierProvider.notifier)..setIssues(const [homelessness]);
-      await notifier.chooseStyle(formal);
+      await notifier.chooseStyle(direct);
       notifier.setBody('My own words instead.');
       await tester.pumpAndSettle();
       return container;
@@ -185,13 +181,13 @@ void main() {
       final draft = container.read(draftNotifierProvider);
       expect([for (final issue in draft.issues) issue.id], ['homelessness', 'housing-crisis']);
       expect(draft.body, isEmpty);
-      expect(draft.style, formal); // so the next screen offers it again
+      expect(draft.style, direct); // so the next screen offers it again
     });
 
     testWidgets('text that was not edited is simply replaced, with no question', (tester) async {
       final container = await openHousing(tester);
       final notifier = container.read(draftNotifierProvider.notifier)..setIssues(const [homelessness]);
-      await notifier.chooseStyle(formal);
+      await notifier.chooseStyle(direct);
       await tester.pumpAndSettle();
 
       await tick(tester, 'Housing Crisis');

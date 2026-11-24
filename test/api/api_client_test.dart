@@ -66,74 +66,66 @@ void main() {
 
     test('returns the MessageRecord on 200 with the bearer token attached', () async {
       token = 'the-token';
-      when(
-        () => httpClient.get(
-          Uri.parse('http://localhost:8000/messages/msg-1'),
-          headers: any(named: 'headers'),
-        ),
-      ).thenAnswer((_) async => jsonResponse(messageJson, 200));
+      when(() => httpClient.get(Uri.parse('http://localhost:8000/messages/msg-1'), headers: any(named: 'headers')))
+          .thenAnswer((_) async => jsonResponse(messageJson, 200));
 
       final record = await client.getMessage('msg-1');
 
       expect(record.id, 'msg-1');
       final captured = verify(
-        () => httpClient.get(
-          Uri.parse('http://localhost:8000/messages/msg-1'),
-          headers: captureAny(named: 'headers'),
-        ),
+        () => httpClient.get(Uri.parse('http://localhost:8000/messages/msg-1'), headers: captureAny(named: 'headers')),
       ).captured;
       expect((captured.single as Map)['Authorization'], 'Bearer the-token');
     });
 
     test('throws NotFoundException on 404 (not found or not owned)', () async {
       token = 'the-token';
-      when(
-        () => httpClient.get(
-          Uri.parse('http://localhost:8000/messages/msg-1'),
-          headers: any(named: 'headers'),
-        ),
-      ).thenAnswer((_) async => jsonResponse({'detail': 'Message not found.'}, 404));
+      when(() => httpClient.get(Uri.parse('http://localhost:8000/messages/msg-1'), headers: any(named: 'headers')))
+          .thenAnswer((_) async => jsonResponse({'detail': 'Message not found.'}, 404));
 
       expect(() => client.getMessage('msg-1'), throwsA(isA<NotFoundException>()));
     });
   });
 
   group('getTopics', () {
-    test('returns the issues with their titles and categories, the categories and styles, and the email layout, on 200', () async {
-      when(() => httpClient.get(Uri.parse('http://localhost:8000/topics'))).thenAnswer(
-        (_) async => jsonResponse({
-          'topics': [
-            {'id': 'housing-crisis', 'title': 'Housing Crisis', 'category': 'housing'},
-            {'id': 'homelessness', 'title': 'Homelessness', 'category': 'housing'},
-            {'id': 'triple-lock', 'title': 'Triple Lock', 'category': 'geopolitics'},
-          ],
-          'categories': [
-            {'id': 'housing', 'title': 'Housing'},
-            {'id': 'geopolitics', 'title': 'Geopolitics'},
-          ],
-          'styles': [
-            {'id': 'formal-direct', 'title': 'Formal & Direct', 'description': 'Respectful and to the point.'},
-            {'id': 'passionate-urgent', 'title': 'Passionate & Urgent', 'description': 'Strong feeling.'},
-          ],
-          'email_layout': {'greeting_format': 'Hi {name},', 'sign_off': 'Kind regards,'},
-        }, 200),
-      );
+    test(
+      'returns the issues with their titles and categories, the categories and styles, and the email layout, on 200',
+      () async {
+        when(() => httpClient.get(Uri.parse('http://localhost:8000/topics'))).thenAnswer(
+          (_) async => jsonResponse({
+            'topics': [
+              {'id': 'housing-crisis', 'title': 'Housing Crisis', 'category': 'housing'},
+              {'id': 'homelessness', 'title': 'Homelessness', 'category': 'housing'},
+              {'id': 'triple-lock', 'title': 'Triple Lock', 'category': 'geopolitics'},
+            ],
+            'categories': [
+              {'id': 'housing', 'title': 'Housing'},
+              {'id': 'geopolitics', 'title': 'Geopolitics'},
+            ],
+            'styles': [
+              {'id': 'direct', 'title': 'Direct', 'description': 'Respectful and to the point.'},
+              {'id': 'urgent', 'title': 'Urgent', 'description': 'Strong feeling.'},
+            ],
+            'email_layout': {'greeting_format': 'Hi {name},', 'sign_off': 'Kind regards,'},
+          }, 200),
+        );
 
-      final catalogue = await client.getTopics();
+        final catalogue = await client.getTopics();
 
-      expect(catalogue.topics.map((t) => t.id), ['housing-crisis', 'homelessness', 'triple-lock']);
-      expect(catalogue.topics.map((t) => t.title), ['Housing Crisis', 'Homelessness', 'Triple Lock']);
-      expect(catalogue.topics.map((t) => t.category), ['housing', 'housing', 'geopolitics']);
-      expect(catalogue.categories.map((c) => c.title), ['Housing', 'Geopolitics']); // in the server's order
-      expect(catalogue.styles.map((s) => s.id), ['formal-direct', 'passionate-urgent']);
-      expect(catalogue.styles.first.title, 'Formal & Direct');
-      expect(catalogue.styles.first.description, 'Respectful and to the point.');
-      expect(catalogue.topicsIn('housing').map((t) => t.id), ['housing-crisis', 'homelessness']);
-      expect(catalogue.topicsIn('geopolitics').map((t) => t.id), ['triple-lock']);
-      expect(catalogue.topicsIn('nothing-here'), isEmpty);
-      expect(catalogue.emailLayout.greetingFor('Conor Dowling'), 'Hi Conor Dowling,');
-      expect(catalogue.emailLayout.signOff, 'Kind regards,');
-    });
+        expect(catalogue.topics.map((t) => t.id), ['housing-crisis', 'homelessness', 'triple-lock']);
+        expect(catalogue.topics.map((t) => t.title), ['Housing Crisis', 'Homelessness', 'Triple Lock']);
+        expect(catalogue.topics.map((t) => t.category), ['housing', 'housing', 'geopolitics']);
+        expect(catalogue.categories.map((c) => c.title), ['Housing', 'Geopolitics']); // in the server's order
+        expect(catalogue.styles.map((s) => s.id), ['direct', 'urgent']);
+        expect(catalogue.styles.first.title, 'Direct');
+        expect(catalogue.styles.first.description, 'Respectful and to the point.');
+        expect(catalogue.topicsIn('housing').map((t) => t.id), ['housing-crisis', 'homelessness']);
+        expect(catalogue.topicsIn('geopolitics').map((t) => t.id), ['triple-lock']);
+        expect(catalogue.topicsIn('nothing-here'), isEmpty);
+        expect(catalogue.emailLayout.greetingFor('Conor Dowling'), 'Hi Conor Dowling,');
+        expect(catalogue.emailLayout.signOff, 'Kind regards,');
+      },
+    );
 
     test('an empty list means there are no issues ready yet', () async {
       when(() => httpClient.get(Uri.parse('http://localhost:8000/topics'))).thenAnswer(
@@ -161,7 +153,7 @@ void main() {
         'triple-lock': 'real-solutions',
         '_subject': 'stand',
       },
-      'style': 'passionate-urgent',
+      'style': 'urgent',
       'subject': 'Where do you stand on Housing Crisis and Triple Lock?',
       'body': 'Housing Crisis\nWhere do you stand on the housing crisis?',
       'footer': 'Started from a CBA topic template.',
@@ -213,11 +205,11 @@ void main() {
 
       final composed = await client.composeTopics(
         issueIds: ['housing-crisis', 'triple-lock'],
-        style: 'passionate-urgent',
-        variants: {'housing-crisis': 'passionate-urgent'},
+        style: 'urgent',
+        variants: {'housing-crisis': 'urgent'},
       );
 
-      expect(composed.style, 'passionate-urgent');
+      expect(composed.style, 'urgent');
       final captured = verify(
         () => httpClient.post(
           Uri.parse('http://localhost:8000/topics/compose'),
@@ -227,8 +219,8 @@ void main() {
       ).captured;
       expect(jsonDecode(captured.single as String), {
         'topics': ['housing-crisis', 'triple-lock'],
-        'style': 'passionate-urgent',
-        'variants': {'housing-crisis': 'passionate-urgent'},
+        'style': 'urgent',
+        'variants': {'housing-crisis': 'urgent'},
       });
     });
 
@@ -242,10 +234,7 @@ void main() {
     test('throws NotFoundException on 404 (an issue that is not available)', () async {
       stubCompose(jsonResponse({'detail': 'Topic not found.'}, 404));
 
-      expect(
-        () => client.composeTopics(issueIds: ['nope']),
-        throwsA(isA<NotFoundException>()),
-      );
+      expect(() => client.composeTopics(issueIds: ['nope']), throwsA(isA<NotFoundException>()));
     });
 
     test('keeps the server\'s message when too many issues were chosen (422 with a plain detail)', () async {
@@ -254,20 +243,25 @@ void main() {
       await expectLater(
         client.composeTopics(issueIds: ['a', 'b']),
         throwsA(
-          isA<ApiException>().having((e) => e.message, 'message', 'Too many topics for one email. Please choose fewer.'),
+          isA<ApiException>().having(
+            (e) => e.message,
+            'message',
+            'Too many topics for one email. Please choose fewer.',
+          ),
         ),
       );
     });
 
     test('throws NetworkException when there is no response', () async {
       when(
-        () => httpClient.post(any(), headers: any(named: 'headers'), body: any(named: 'body')),
+        () => httpClient.post(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        ),
       ).thenThrow(Exception('offline'));
 
-      expect(
-        () => client.composeTopics(issueIds: ['housing-crisis']),
-        throwsA(isA<NetworkException>()),
-      );
+      expect(() => client.composeTopics(issueIds: ['housing-crisis']), throwsA(isA<NetworkException>()));
     });
   });
 
@@ -297,9 +291,8 @@ void main() {
     });
 
     test('an empty list means no campaigns are open yet', () async {
-      when(() => httpClient.get(Uri.parse('http://localhost:8000/campaigns'))).thenAnswer(
-        (_) async => jsonResponse({'campaigns': <Object>[]}, 200),
-      );
+      when(() => httpClient.get(Uri.parse('http://localhost:8000/campaigns')))
+          .thenAnswer((_) async => jsonResponse({'campaigns': <Object>[]}, 200));
 
       expect(await client.getCampaigns(), isEmpty);
     });
@@ -346,7 +339,11 @@ void main() {
 
     test('throws NotFoundException on 404 (a campaign that is not open)', () async {
       when(
-        () => httpClient.post(any(), headers: any(named: 'headers'), body: any(named: 'body')),
+        () => httpClient.post(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        ),
       ).thenAnswer((_) async => jsonResponse({'detail': 'Campaign not found.'}, 404));
 
       expect(() => client.composeCampaign(campaignId: 'nope'), throwsA(isA<NotFoundException>()));
@@ -393,7 +390,11 @@ void main() {
   group('searchPlaces', () {
     test('sends the text in the body (never the URL) and reads the areas back', () async {
       when(
-        () => httpClient.post(Uri.parse('http://localhost:8000/places/search'), headers: any(named: 'headers'), body: any(named: 'body')),
+        () => httpClient.post(
+          Uri.parse('http://localhost:8000/places/search'),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        ),
       ).thenAnswer(
         (_) async => jsonResponse({
           'results': [
@@ -423,7 +424,11 @@ void main() {
       expect(found.total, 12);
       expect(found.isCutShort, isTrue);
       final sent = verify(
-        () => httpClient.post(captureAny(), headers: any(named: 'headers'), body: captureAny(named: 'body')),
+        () => httpClient.post(
+          captureAny(),
+          headers: any(named: 'headers'),
+          body: captureAny(named: 'body'),
+        ),
       ).captured;
       expect((sent[0] as Uri).query, isEmpty);
       expect(jsonDecode(sent[1] as String), {'query': 'Swords'});
@@ -432,9 +437,7 @@ void main() {
 
   group('getLeasForCouncil', () {
     test('returns LEAs with councillor name/party previews on 200', () async {
-      when(
-        () => httpClient.get(Uri.parse('http://localhost:8000/councils/fingal-county-council/leas')),
-      ).thenAnswer(
+      when(() => httpClient.get(Uri.parse('http://localhost:8000/councils/fingal-county-council/leas'))).thenAnswer(
         (_) async => jsonResponse({
           'leas': [
             {
@@ -457,9 +460,8 @@ void main() {
     });
 
     test('throws NotFoundException on 404', () async {
-      when(
-        () => httpClient.get(Uri.parse('http://localhost:8000/councils/not-real/leas')),
-      ).thenAnswer((_) async => jsonResponse({'detail': 'Council not found.'}, 404));
+      when(() => httpClient.get(Uri.parse('http://localhost:8000/councils/not-real/leas')))
+          .thenAnswer((_) async => jsonResponse({'detail': 'Council not found.'}, 404));
 
       expect(
         () => client.getLeasForCouncil('not-real'),
@@ -470,9 +472,8 @@ void main() {
 
   group('getLeas', () {
     test('returns all public LEAs on 200', () async {
-      when(() => httpClient.get(Uri.parse('http://localhost:8000/leas'))).thenAnswer(
-        (_) async => jsonResponse({'leas': <Object>[]}, 200),
-      );
+      when(() => httpClient.get(Uri.parse('http://localhost:8000/leas')))
+          .thenAnswer((_) async => jsonResponse({'leas': <Object>[]}, 200));
 
       final leas = await client.getLeas();
 
@@ -557,7 +558,11 @@ void main() {
         'local_electoral_area': 'fingal-balbriggan',
         'intent': 'issues',
         'topics': ['housing-crisis', 'triple-lock'],
-        'template_variants': {'housing-crisis': 'where-you-stand', 'triple-lock': 'real-solutions', '_subject': 'stand'},
+        'template_variants': {
+          'housing-crisis': 'where-you-stand',
+          'triple-lock': 'real-solutions',
+          '_subject': 'stand',
+        },
         'subject': 'Subject',
         'body': 'Body',
         'sender_name': 'Sam Resident',
@@ -616,10 +621,8 @@ void main() {
           body: any(named: 'body'),
         ),
       ).thenAnswer(
-        (_) async => jsonResponse(
-          {'detail': 'Your email connection has expired. Please reconnect your email account.'},
-          401,
-        ),
+        (_) async =>
+            jsonResponse({'detail': 'Your email connection has expired. Please reconnect your email account.'}, 401),
       );
 
       await expectLater(
@@ -646,8 +649,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => jsonResponse({
-          'detail':
-              "We couldn't verify the councillor for this Local Elective Area. Please check your Local Elective Area and try again.",
+          'detail': "We couldn't verify the councillor for this Local Elective Area. Please check your Local Elective Area and try again.",
         }, 404),
       );
 
@@ -706,13 +708,9 @@ void main() {
     test('throws ConflictException on 409 (wrong state)', () async {
       token = 'the-token';
       when(
-        () => httpClient.post(
-          Uri.parse('http://localhost:8000/messages/msg-1/confirm'),
-          headers: any(named: 'headers'),
-        ),
-      ).thenAnswer(
-        (_) async => jsonResponse({'detail': "Message cannot be confirmed from status 'sent'."}, 409),
-      );
+        () =>
+            httpClient.post(Uri.parse('http://localhost:8000/messages/msg-1/confirm'), headers: any(named: 'headers')),
+      ).thenAnswer((_) async => jsonResponse({'detail': "Message cannot be confirmed from status 'sent'."}, 409));
 
       expect(() => client.confirmMessage('msg-1'), throwsA(isA<ConflictException>()));
     });
@@ -722,14 +720,9 @@ void main() {
     test('throws RateLimitedException on 429', () async {
       token = 'the-token';
       when(
-        () => httpClient.post(
-          Uri.parse('http://localhost:8000/messages/msg-1/send'),
-          headers: any(named: 'headers'),
-        ),
+        () => httpClient.post(Uri.parse('http://localhost:8000/messages/msg-1/send'), headers: any(named: 'headers')),
       ).thenAnswer(
-        (_) async => jsonResponse({
-          'detail': "You've already sent a message today. Please try again tomorrow.",
-        }, 429),
+        (_) async => jsonResponse({'detail': "You've already sent a message today. Please try again tomorrow."}, 429),
       );
 
       expect(() => client.sendMessage('msg-1'), throwsA(isA<RateLimitedException>()));
@@ -738,10 +731,7 @@ void main() {
     test('a 429 carries when the sender can send again', () async {
       token = 'the-token';
       when(
-        () => httpClient.post(
-          Uri.parse('http://localhost:8000/messages/msg-1/send'),
-          headers: any(named: 'headers'),
-        ),
+        () => httpClient.post(Uri.parse('http://localhost:8000/messages/msg-1/send'), headers: any(named: 'headers')),
       ).thenAnswer(
         (_) async => jsonResponse({
           'detail': "You've already sent a message today. Please try again tomorrow.",
@@ -760,10 +750,7 @@ void main() {
     test('a 429 without a time (an older API) still throws, with no time', () async {
       token = 'the-token';
       when(
-        () => httpClient.post(
-          Uri.parse('http://localhost:8000/messages/msg-1/send'),
-          headers: any(named: 'headers'),
-        ),
+        () => httpClient.post(Uri.parse('http://localhost:8000/messages/msg-1/send'), headers: any(named: 'headers')),
       ).thenAnswer((_) async => jsonResponse({'detail': 'Slow down.'}, 429));
 
       await expectLater(
@@ -791,10 +778,7 @@ void main() {
         'status_history': <Object>[],
       };
       when(
-        () => httpClient.post(
-          Uri.parse('http://localhost:8000/messages/msg-1/send'),
-          headers: any(named: 'headers'),
-        ),
+        () => httpClient.post(Uri.parse('http://localhost:8000/messages/msg-1/send'), headers: any(named: 'headers')),
       ).thenAnswer((_) async => jsonResponse(failedJson, 200));
 
       final record = await client.sendMessage('msg-1');
@@ -847,9 +831,8 @@ void main() {
 
   group('network failure', () {
     test('a transport error becomes a NetworkException', () async {
-      when(
-        () => httpClient.get(Uri.parse('http://localhost:8000/topics')),
-      ).thenThrow(http.ClientException('Connection refused'));
+      when(() => httpClient.get(Uri.parse('http://localhost:8000/topics')))
+          .thenThrow(http.ClientException('Connection refused'));
 
       expect(() => client.getTopics(), throwsA(isA<NetworkException>()));
     });

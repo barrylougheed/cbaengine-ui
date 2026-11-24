@@ -34,12 +34,16 @@ class FakeApi {
 
   /// GET /topics: the letter styles, in display order (the first is the default).
   List<Map<String, Object?>> styles = [
-    {'id': 'formal-direct', 'title': 'Formal & Direct', 'description': 'Respectful and to the point.'},
-    {'id': 'passionate-urgent', 'title': 'Passionate & Urgent', 'description': 'Strong feeling, and a call to act now.'},
-    {'id': 'community-focused', 'title': 'Community Focused', 'description': 'How the issue affects your community.'},
-    {'id': 'solution-oriented', 'title': 'Solution-Oriented', 'description': 'Asks for a clear plan.'},
-    {'id': 'disappointed-concerned', 'title': 'Disappointed & Concerned', 'description': 'Worry for the future.'},
-    {'id': 'factual-data-driven', 'title': 'Factual & Data-Driven', 'description': 'Calm, with the facts.'},
+    {'id': 'communal', 'title': 'Communal', 'description': 'How the issue affects people in your community.'},
+    {
+      'id': 'concerned',
+      'title': 'Concerned',
+      'description': 'Expresses concern about your problem, from lack of progress to decisions made.',
+    },
+    {'id': 'data-driven', 'title': 'Data-driven', 'description': 'Calm, with the facts, figures and sources.'},
+    {'id': 'direct', 'title': 'Direct', 'description': 'Respectful and to the point.'},
+    {'id': 'solution-based', 'title': 'Solution-based', 'description': 'Asks for a clear plan and concrete action.'},
+    {'id': 'urgent', 'title': 'Urgent', 'description': 'Strong feeling, and a call to act now.'},
   ];
 
   /// Makes composing an issue email fail with this message (a 422), as the
@@ -87,7 +91,7 @@ class FakeApi {
         if (issueComposeFails != null) return json({'detail': issueComposeFails}, 422);
         final pinned = Map<String, String>.from(asked['variants'] as Map);
         final ids = [for (final id in asked['topics'] as List) id as String];
-        final style = asked['style'] as String? ?? 'formal-direct';
+        final style = asked['style'] as String? ?? 'communal';
         return json({
           'topics': ids,
           // In this fake a wording is named after its style, so the ids sent
@@ -208,7 +212,7 @@ Future<void> walkToTheIssueEmail(
   WidgetTester tester, {
   String category = 'Housing',
   List<String> topics = const ['Housing Crisis'],
-  String style = 'Formal & Direct',
+  String style = 'Direct',
 }) async {
   await tester.tap(find.text(category));
   await tester.pumpAndSettle();

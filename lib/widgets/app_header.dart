@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../theme/app_theme.dart';
 import 'app_banner.dart';
 import 'content_width.dart';
 
-/// The top bar of every screen: white, with a hairline underneath, the olive
-/// logo and the CBAEngine wordmark at the left (the link back to the start)
-/// and a Privacy link at the right. White rather than a coloured band because
-/// the logo olive is a mid-tone that reads well on white but nearly vanishes
-/// on a dark olive.
+/// The top bar of every screen: white, with a hairline underneath, and the
+/// olive logo and the CBAEngine wordmark at the left (the link back to the
+/// start). It carries no other links: the privacy notice is linked from the
+/// footer only. White rather than a coloured band because the logo olive is a
+/// mid-tone that reads well on white but nearly vanishes on a dark olive.
 ///
 /// Its content sits in the same centred column as the Home page, so on a wide
 /// screen the logo lines up with the page below instead of the window edge.
@@ -40,15 +39,9 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
             height: _barHeight,
             child: ContentWidth(
               maxWidth: ContentWidth.wide,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // The name gives way first on a very narrow screen or with large text.
-                  const Flexible(child: AppBanner()),
-                  const SizedBox(width: 8),
-                  TextButton(onPressed: () => context.push('/privacy'), child: const Text('Privacy')),
-                ],
-              ),
+              // At the left and centred vertically. The name gives way first on a
+              // very narrow screen or with large text.
+              child: Align(alignment: Alignment.centerLeft, child: AppBanner()),
             ),
           ),
         ),

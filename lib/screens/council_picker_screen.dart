@@ -11,6 +11,7 @@ import '../utils/counts.dart';
 import '../widgets/app_header.dart';
 import '../widgets/content_width.dart';
 import '../widgets/error_banner.dart';
+import '../widgets/footer_scroll.dart';
 import '../widgets/loading_view.dart';
 import '../widgets/step_progress_indicator.dart';
 
@@ -76,10 +77,14 @@ class _CouncilPickerScreenState extends ConsumerState<CouncilPickerScreen> {
           const StepProgressIndicator(currentStep: 2, totalSteps: 5, label: 'Select your council'),
           Expanded(
             child: councilsAsync.when(
-              loading: () => const LoadingView(),
-              error: (error, _) => ErrorBanner(
-                message: 'Could not load councils. Please check your connection and try again.',
-                onRetry: () => ref.invalidate(councilsProvider),
+              // Each state ends with the footer, like every screen.
+              loading: () => const FooterScroll(centered: true, child: LoadingView()),
+              error: (error, _) => FooterScroll(
+                centered: true,
+                child: ErrorBanner(
+                  message: 'Could not load councils. Please check your connection and try again.',
+                  onRetry: () => ref.invalidate(councilsProvider),
+                ),
               ),
               data: (councils) {
                 final shown = _matching(councils);
@@ -125,15 +130,15 @@ class _CouncilPickerScreenState extends ConsumerState<CouncilPickerScreen> {
                           child: Text(
                             '${countOf(shown.length, 'council')} · '
                             '${countOf(shown.fold<int>(0, (sum, council) => sum + council.councillorCount), 'councillor')}',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                           ),
                         ),
                       ),
                     Expanded(
                       child: shown.isEmpty
-                          ? Center(
+                          ? FooterScroll(
+                              centered: true,
                               child: Padding(
                                 padding: const EdgeInsets.all(24),
                                 child: Text(
@@ -145,29 +150,34 @@ class _CouncilPickerScreenState extends ConsumerState<CouncilPickerScreen> {
                           : Scrollbar(
                               controller: _scrollController,
                               thumbVisibility: true,
-                              child: ListView.builder(
+                              // The councils, then the footer, scroll together.
+                              child: FooterScroll(
                                 controller: _scrollController,
-                                padding: EdgeInsets.symmetric(horizontal: gutter, vertical: 4),
-                                itemCount: shown.length,
-                                itemBuilder: (context, index) {
-                                  final council = shown[index];
-                                  return Card(
-                                    child: ListTile(
-                                      title: Text(council.name),
-                                      subtitle: council.councillorCount > 0
-                                          ? Text(
-                                              '${countOf(council.areaCount, 'area')} · '
-                                              '${countOf(council.councillorCount, 'councillor')}',
-                                            )
-                                          : null,
-                                      trailing: const Icon(Icons.chevron_right),
-                                      onTap: () {
-                                        ref.read(draftNotifierProvider.notifier).selectCouncil(council);
-                                        context.push('/council/${council.id}/lea');
-                                      },
-                                    ),
-                                  );
-                                },
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: gutter, vertical: 4),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      for (final council in shown)
+                                        Card(
+                                          child: ListTile(
+                                            title: Text(council.name),
+                                            subtitle: council.councillorCount > 0
+                                                ? Text(
+                                                    '${countOf(council.areaCount, 'area')} · '
+                                                    '${countOf(council.councillorCount, 'councillor')}',
+                                                  )
+                                                : null,
+                                            trailing: const Icon(Icons.chevron_right),
+                                            onTap: () {
+                                              ref.read(draftNotifierProvider.notifier).selectCouncil(council);
+                                              context.push('/council/${council.id}/lea');
+                                            },
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
                     ),

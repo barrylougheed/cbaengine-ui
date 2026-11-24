@@ -1,16 +1,25 @@
 import 'package:flutter/material.dart';
 
+import 'app_footer.dart';
 import 'content_width.dart';
+import 'footer_scroll.dart';
 
-/// A scrolling list of [children] whose content sits in the centred reading
-/// column. The list itself spans the whole window, so the scrollbar sits at the
-/// window edge and the mouse wheel scrolls anywhere on the page; only the
-/// margins grow with the window (see [ContentWidth.gutter]).
+/// A scrolling page whose [children] sit in the centred reading column, with
+/// the footer at the end (see [FooterScroll]). The page itself spans the whole
+/// window, so its scrollbar sits at the window edge and the mouse wheel scrolls
+/// anywhere on it; only the margins grow with the window (see
+/// [ContentWidth.gutter]).
 ///
 /// It is what the screens of the flow put their content in, in place of a bare
 /// `ListView` with a fixed 16px padding.
 class ContentList extends StatelessWidget {
-  const ContentList({super.key, required this.children, this.maxWidth = ContentWidth.form, this.verticalPadding = 16});
+  const ContentList({
+    super.key,
+    required this.children,
+    this.maxWidth = ContentWidth.form,
+    this.verticalPadding = 16,
+    this.footer = const AppFooter(),
+  });
 
   final List<Widget> children;
 
@@ -20,15 +29,21 @@ class ContentList extends StatelessWidget {
   /// Space above the first child and below the last.
   final double verticalPadding;
 
+  /// The foot of the page. The privacy notice leaves out its own link.
+  final Widget footer;
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
-      builder: (context, constraints) => ListView(
-        padding: EdgeInsets.symmetric(
-          horizontal: ContentWidth.gutter(constraints.maxWidth, maxWidth: maxWidth),
-          vertical: verticalPadding,
+      builder: (context, constraints) => FooterScroll(
+        footer: footer,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: ContentWidth.gutter(constraints.maxWidth, maxWidth: maxWidth),
+            vertical: verticalPadding,
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
         ),
-        children: children,
       ),
     );
   }

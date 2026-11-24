@@ -8,6 +8,7 @@ import 'package:app/providers/core_providers.dart';
 import 'package:app/providers/message_flow/message_flow_notifier.dart';
 import 'package:app/router.dart';
 import 'package:app/theme/app_theme.dart';
+import 'package:app/widgets/app_footer.dart';
 import 'package:app/widgets/content_width.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -73,7 +74,12 @@ void main() {
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
         apiClientProvider.overrideWithValue(
-          ApiClient(httpClient: client, baseUrl: 'http://localhost:8000', getToken: () => 'token', onUnauthorized: () {}),
+          ApiClient(
+            httpClient: client,
+            baseUrl: 'http://localhost:8000',
+            getToken: () => 'token',
+            onUnauthorized: () {},
+          ),
         ),
       ],
     );
@@ -102,6 +108,20 @@ void main() {
     expect(find.text('Fine Gael'), findsOneWidget);
     expect(find.text('Bob Two'), findsOneWidget);
     expect(find.text('Labour Party'), findsOneWidget);
+  });
+
+  testWidgets('a sent message ends with the footer, below who it went to', (tester) async {
+    await openResult(tester, messageJson(status: 'sent'));
+
+    expect(find.byType(AppFooter), findsOneWidget);
+    expect(tester.getTopLeft(find.byType(AppFooter)).dy, greaterThan(tester.getBottomLeft(find.text('Bob Two')).dy));
+  });
+
+  testWidgets('a failed message ends with the footer too', (tester) async {
+    await openResult(tester, messageJson(status: 'failed', detail: 'It did not go.'));
+
+    expect(find.text('It did not go.'), findsOneWidget);
+    expect(find.byType(AppFooter), findsOneWidget);
   });
 
   testWidgets('it never shows a councillor email address', (tester) async {
@@ -143,7 +163,8 @@ void main() {
       tester,
       messageJson(
         status: 'failed',
-        detail: 'Delivered to: ann.one@council.ie. Failed to deliver to: bob.two@council.ie. '
+        detail:
+            'Delivered to: ann.one@council.ie. Failed to deliver to: bob.two@council.ie. '
             'Do not resend to the recipients already delivered to.',
       ),
     );

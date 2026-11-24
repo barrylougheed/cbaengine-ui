@@ -6,6 +6,7 @@ import 'package:app/models/message_intent.dart';
 import 'package:app/providers/core_providers.dart';
 import 'package:app/providers/draft/draft_notifier.dart';
 import 'package:app/router.dart';
+import 'package:app/widgets/app_footer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -42,7 +43,13 @@ void main() {
       switch ((asked['query'] as String).toLowerCase()) {
         case 'swords':
           return jsonResponse({
-            'results': [result('Swords', 'fingal-swords', 'Swords', 'Fingal County Council', ['Ann One', 'Bob Two', 'Cora Three'])],
+            'results': [
+              result('Swords', 'fingal-swords', 'Swords', 'Fingal County Council', [
+                'Ann One',
+                'Bob Two',
+                'Cora Three',
+              ]),
+            ],
             'total': 1,
           });
         case 'athlone':
@@ -86,7 +93,10 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     container = ProviderContainer.test(
       retry: noAutomaticRetry,
-      overrides: [sharedPreferencesProvider.overrideWithValue(prefs), httpClientProvider.overrideWithValue(MockClient(handle))],
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        httpClientProvider.overrideWithValue(MockClient(handle)),
+      ],
     );
     // The council and area come after the email, so there has to be one.
     container.read(draftNotifierProvider.notifier)
@@ -192,6 +202,33 @@ void main() {
     await open(tester);
 
     expect(find.textContaining('Tailte Éireann'), findsOneWidget);
+  });
+
+  group('the footer', () {
+    testWidgets('comes after the credit for the place names, before anything is typed', (tester) async {
+      await open(tester);
+
+      expect(find.byType(AppFooter), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.byType(AppFooter)).dy,
+        greaterThan(tester.getBottomLeft(find.textContaining('Tailte Éireann')).dy),
+      );
+    });
+
+    testWidgets('is there with the matches, with no match, and when the search fails', (tester) async {
+      await open(tester);
+
+      await type(tester, 'Swords');
+      expect(find.byType(AppFooter), findsOneWidget);
+
+      await type(tester, 'Narnia');
+      expect(find.textContaining('We could not find'), findsOneWidget);
+      expect(find.byType(AppFooter), findsOneWidget);
+
+      await type(tester, 'boom');
+      expect(find.textContaining('Could not search'), findsOneWidget);
+      expect(find.byType(AppFooter), findsOneWidget);
+    });
   });
 
   testWidgets('the council list offers it, above the councils', (tester) async {

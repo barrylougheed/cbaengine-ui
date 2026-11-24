@@ -68,6 +68,11 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # The brand logos (the sloth icon and the sloth wordmark, in green and cream),
+  # prepared from the brand folder by tool/make_brand_assets.py.
+  assets:
+    - assets/brand/
+
   # Inter, bundled with the app rather than fetched from Google at runtime
   # (which sent every visitor's IP address to Google — GDPR review). These
   # are the same files the google_fonts package used to download, checked

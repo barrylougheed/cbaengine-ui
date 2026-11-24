@@ -9,6 +9,7 @@ import '../utils/counts.dart';
 import '../widgets/app_header.dart';
 import '../widgets/content_width.dart';
 import '../widgets/error_banner.dart';
+import '../widgets/footer_scroll.dart';
 import '../widgets/loading_view.dart';
 import '../widgets/step_progress_indicator.dart';
 
@@ -35,20 +36,23 @@ class LeaPickerScreen extends ConsumerWidget {
           const StepProgressIndicator(currentStep: 3, totalSteps: 5, label: 'Select your area'),
           Expanded(
             child: leasAsync.when(
-              loading: () => const LoadingView(),
-              error: (error, _) => error is NotFoundException
-                  // Only reachable via a malformed deep link (a councilId
-                  // that doesn't resolve to any council) — the backend's
-                  // own wording ("Council not found.") is already correct
-                  // and specific, so render it verbatim rather than the
-                  // generic fallback below. No retry: a nonexistent
-                  // council id won't start resolving.
-                  ? ErrorBanner(message: error.message)
-                  : ErrorBanner(
-                      message:
-                          'Could not load areas for this council. Please check your connection and try again.',
-                      onRetry: () => ref.invalidate(leasForCouncilProvider(councilId)),
-                    ),
+              // Each state ends with the footer, like every screen.
+              loading: () => const FooterScroll(centered: true, child: LoadingView()),
+              error: (error, _) => FooterScroll(
+                centered: true,
+                child: error is NotFoundException
+                    // Only reachable via a malformed deep link (a councilId
+                    // that doesn't resolve to any council) — the backend's
+                    // own wording ("Council not found.") is already correct
+                    // and specific, so render it verbatim rather than the
+                    // generic fallback below. No retry: a nonexistent
+                    // council id won't start resolving.
+                    ? ErrorBanner(message: error.message)
+                    : ErrorBanner(
+                        message: 'Could not load areas for this council. Please check your connection and try again.',
+                        onRetry: () => ref.invalidate(leasForCouncilProvider(councilId)),
+                      ),
+              ),
               data: (leas) => Column(
                 children: [
                   if (leas.isNotEmpty)
@@ -59,42 +63,46 @@ class LeaPickerScreen extends ConsumerWidget {
                         child: Text(
                           '${leas.first.council} · ${countOf(leas.length, 'area')} · '
                           '${countOf(leas.fold<int>(0, (sum, lea) => sum + lea.councillors.length), 'councillor')}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                       ),
                     ),
                   Expanded(
-                    child: ListView.builder(
-                      padding: EdgeInsets.symmetric(horizontal: gutter, vertical: 4),
-                      itemCount: leas.length,
-                      itemBuilder: (context, index) {
-                        final lea = leas[index];
-                        return Card(
-                          child: ListTile(
-                            title: Text(lea.name),
-                            // Who they would be writing to, so they can tell
-                            // they picked the right area.
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(countOf(lea.councillors.length, 'councillor')),
-                                Text(
-                                  lea.councillors.map((councillor) => councillor.name).join(', '),
-                                  maxLines: 3,
-                                  overflow: TextOverflow.ellipsis,
+                    // The areas, then the footer, scroll together.
+                    child: FooterScroll(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: gutter, vertical: 4),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (final lea in leas)
+                              Card(
+                                child: ListTile(
+                                  title: Text(lea.name),
+                                  // Who they would be writing to, so they can tell
+                                  // they picked the right area.
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(countOf(lea.councillors.length, 'councillor')),
+                                      Text(
+                                        lea.councillors.map((councillor) => councillor.name).join(', '),
+                                        maxLines: 3,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                  trailing: const Icon(Icons.chevron_right),
+                                  onTap: () {
+                                    ref.read(draftNotifierProvider.notifier).selectLea(lea);
+                                    context.push('/review');
+                                  },
                                 ),
-                              ],
-                            ),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () {
-                              ref.read(draftNotifierProvider.notifier).selectLea(lea);
-                              context.push('/review');
-                            },
-                          ),
-                        );
-                      },
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ],

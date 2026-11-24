@@ -23,7 +23,7 @@ void main() {
   Future<ProviderContainer> openEditor(
     WidgetTester tester, {
     List<String> topics = const ['Housing Crisis'],
-    String style = 'Formal & Direct',
+    String style = 'Direct',
   }) async {
     final container = await openApp(tester, api, path: '/craft/issues');
     await walkToTheIssueEmail(tester, topics: topics, style: style);
@@ -46,18 +46,18 @@ void main() {
   });
 
   testWidgets('says which topics and which style the email is in', (tester) async {
-    await openEditor(tester, topics: const ['Housing Crisis', 'Homelessness'], style: 'Passionate & Urgent');
+    await openEditor(tester, topics: const ['Housing Crisis', 'Homelessness'], style: 'Urgent');
 
     expect(find.text('Topics: Homelessness, Housing Crisis'), findsOneWidget);
-    expect(find.text('Style: Passionate & Urgent'), findsOneWidget);
+    expect(find.text('Style: Urgent'), findsOneWidget);
   });
 
   testWidgets('the text was written in the style chosen, with no area asked for', (tester) async {
-    await openEditor(tester, style: 'Solution-Oriented');
+    await openEditor(tester, style: 'Solution-based');
 
     expect(api.composeRequests.single, {
       'topics': ['housing-crisis'],
-      'style': 'solution-oriented',
+      'style': 'solution-based',
       'variants': <String, String>{},
     });
   });
@@ -119,7 +119,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Choose a letter style'), findsWidgets);
-    expect(tester.widget<RadioGroup<String>>(find.byType(RadioGroup<String>)).groupValue, 'formal-direct');
+    expect(tester.widget<RadioGroup<String>>(find.byType(RadioGroup<String>)).groupValue, 'direct');
     expect(container.read(draftNotifierProvider).body, 'My own words instead.');
   });
 

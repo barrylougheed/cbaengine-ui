@@ -14,11 +14,7 @@ import '../support/test_app.dart';
 /// server beyond the list.
 void main() {
   late FakeApi api;
-  const formal = StyleSummary(
-    id: 'formal-direct',
-    title: 'Formal & Direct',
-    description: 'Respectful and to the point.',
-  );
+  const direct = StyleSummary(id: 'direct', title: 'Direct', description: 'Respectful and to the point.');
 
   setUp(() => api = FakeApi());
 
@@ -275,7 +271,7 @@ void main() {
     final container = await openCategories(tester);
     final notifier = container.read(draftNotifierProvider.notifier);
     notifier.setIssues(const [TopicSummary(id: 'homelessness', title: 'Homelessness', category: 'housing')]);
-    await notifier.chooseStyle(formal);
+    await notifier.chooseStyle(direct);
     notifier.setBody('My own words instead.');
     await tester.pumpAndSettle();
 

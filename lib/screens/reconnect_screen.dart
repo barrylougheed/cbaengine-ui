@@ -7,6 +7,7 @@ import '../providers/draft/draft_notifier.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_header.dart';
 import '../widgets/content_width.dart';
+import '../widgets/footer_scroll.dart';
 
 /// Reached from anywhere the moment authNotifierProvider reports an
 /// expired session (a 401 from any authenticated call) — the router's
@@ -21,10 +22,12 @@ class ReconnectScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: const AppHeader(),
-      // Centred in the window, in the same reading column as the steps.
-      body: Center(
-        child: SingleChildScrollView(
-          child: ContentWidth(
+      // Centred in the space above the footer, in the same reading column as the steps.
+      body: FooterScroll(
+        centered: true,
+        child: ContentWidth(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

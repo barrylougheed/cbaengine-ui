@@ -33,8 +33,8 @@ void main() {
   );
   const housing = TopicSummary(id: 'housing-crisis', title: 'Housing Crisis', category: 'housing');
   const lock = TopicSummary(id: 'triple-lock', title: 'Triple Lock', category: 'geopolitics');
-  const formal = StyleSummary(id: 'formal-direct', title: 'Formal & Direct', description: 'Respectful.');
-  const passionate = StyleSummary(id: 'passionate-urgent', title: 'Passionate & Urgent', description: 'Urgent.');
+  const direct = StyleSummary(id: 'direct', title: 'Direct', description: 'Respectful.');
+  const urgent = StyleSummary(id: 'urgent', title: 'Urgent', description: 'Urgent.');
   const green = CampaignSummary(id: 'save-stephens-green', title: "Save Stephen's Green", summary: 'About the Green.');
 
   late ProviderContainer container;
@@ -48,14 +48,13 @@ void main() {
 
   /// What a resident does: choose the issues, then a style, which writes the text.
   /// With no issues there is nothing to write.
-  Future<String?> composeIssues(List<TopicSummary> chosen, [StyleSummary style = formal]) async {
+  Future<String?> composeIssues(List<TopicSummary> chosen, [StyleSummary style = direct]) async {
     notifier().setIssues(chosen);
     if (chosen.isEmpty) return null;
     return notifier().chooseStyle(style);
   }
 
-  http.Response ok(Object body) =>
-      http.Response(jsonEncode(body), 200, headers: {'content-type': 'application/json'});
+  http.Response ok(Object body) => http.Response(jsonEncode(body), 200, headers: {'content-type': 'application/json'});
 
   /// What the server would answer for the issues asked: an introduction "i2",
   /// a wording "w2" for each issue and subject "s2" (unless pinned), with text
@@ -72,7 +71,7 @@ void main() {
     return ok({
       'topics': ids,
       'variants': variants,
-      'style': request['style'] ?? 'formal-direct',
+      'style': request['style'] ?? 'direct',
       'subject': 'Subject ${variants['_subject']}: ${ids.join(' and ')}',
       'body': sections.join('\n\n'),
       'footer': 'Started from a topic.',
@@ -245,7 +244,7 @@ void main() {
       // The issue ids and the style are sent, and nothing else: there is no area.
       expect(composeRequests.single, {
         'topics': ['housing-crisis'],
-        'style': 'formal-direct',
+        'style': 'direct',
         'variants': <String, String>{},
       });
     });
@@ -254,7 +253,7 @@ void main() {
       await composeIssues([housing, lock]);
 
       expect(state().issues, [housing, lock]);
-      expect(state().style, formal);
+      expect(state().style, direct);
       expect(state().selectionComplete, isTrue);
       expect(state().body, isNotEmpty);
     });
@@ -273,14 +272,14 @@ void main() {
       notifier().setIssues([housing]);
       expect(state().hasChosenContent, isFalse);
 
-      await notifier().chooseStyle(passionate);
+      await notifier().chooseStyle(urgent);
 
       expect(state().hasChosenContent, isTrue);
       expect(state().isContentReady, isFalse); // no name yet
     });
 
     test('choosing a style with no issues chosen asks the server nothing', () async {
-      final error = await notifier().chooseStyle(formal);
+      final error = await notifier().chooseStyle(direct);
 
       expect(error, isNull);
       expect(composeRequests, isEmpty);
@@ -290,23 +289,29 @@ void main() {
     test('the style chosen is the one asked for, and the one the draft holds', () async {
       notifier().setIssues([housing]);
 
-      await notifier().chooseStyle(passionate);
+      await notifier().chooseStyle(urgent);
 
-      expect(composeRequests.single['style'], 'passionate-urgent');
-      expect(state().style, passionate);
+      expect(composeRequests.single['style'], 'urgent');
+      expect(state().style, urgent);
     });
 
-    test('changing the style writes the text again, sending the wording held so the server can keep or replace it', () async {
-      await composeIssues([housing, lock]);
+    test(
+      'changing the style writes the text again, sending the wording held so the server can keep or replace it',
+      () async {
+        await composeIssues([housing, lock]);
 
-      await notifier().chooseStyle(passionate);
+        await notifier().chooseStyle(urgent);
 
-      expect(composeRequests, hasLength(2));
-      expect(composeRequests.last['style'], 'passionate-urgent');
-      expect(composeRequests.last['variants'], containsPair('housing-crisis', 'w2')); // the server decides what to keep
-      expect(state().style, passionate);
-      expect(state().issues, [housing, lock]);
-    });
+        expect(composeRequests, hasLength(2));
+        expect(composeRequests.last['style'], 'urgent');
+        expect(
+          composeRequests.last['variants'],
+          containsPair('housing-crisis', 'w2'),
+        ); // the server decides what to keep
+        expect(state().style, urgent);
+        expect(state().issues, [housing, lock]);
+      },
+    );
 
     test('changing the issues after the text was written takes the text away but keeps the style', () async {
       await composeIssues([housing, lock]);
@@ -314,7 +319,7 @@ void main() {
       notifier().setIssues([housing]);
 
       expect(state().issues, [housing]);
-      expect(state().style, formal); // so the style screen can offer it again
+      expect(state().style, direct); // so the style screen can offer it again
       expect((state().subject, state().body, state().footer), ('', '', null));
       expect(state().hasEditedText, isFalse);
     });
@@ -323,10 +328,15 @@ void main() {
       final slow = Completer<http.Response>();
       composeAnswer = (_) => slow.future;
       notifier().setIssues([housing]);
-      final pending = notifier().chooseStyle(formal);
+      final pending = notifier().chooseStyle(direct);
 
       notifier().setIssues([lock]);
-      slow.complete(await defaultIssueAnswer({'topics': ['housing-crisis'], 'variants': <String, String>{}}));
+      slow.complete(
+        await defaultIssueAnswer({
+          'topics': ['housing-crisis'],
+          'variants': <String, String>{},
+        }),
+      );
       await pending;
 
       expect(state().issues, [lock]);
@@ -567,7 +577,7 @@ void main() {
   group('switching between the kinds of email', () {
     test('clears the issues, style, campaign, text and footer', () async {
       await composeIssues([housing]);
-      expect(state().style, formal);
+      expect(state().style, direct);
 
       notifier().setIntent(MessageIntent.own);
 
@@ -602,7 +612,12 @@ void main() {
 
       final pending = composeIssues([housing]);
       notifier().setIntent(MessageIntent.own);
-      slow.complete(await defaultIssueAnswer({'topics': ['housing-crisis'], 'variants': <String, String>{}}));
+      slow.complete(
+        await defaultIssueAnswer({
+          'topics': ['housing-crisis'],
+          'variants': <String, String>{},
+        }),
+      );
       await pending;
 
       expect(state().issues, isEmpty);

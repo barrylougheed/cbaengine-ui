@@ -6,12 +6,15 @@ import 'package:app/models/message_intent.dart';
 import 'package:app/providers/core_providers.dart';
 import 'package:app/providers/draft/draft_notifier.dart';
 import 'package:app/router.dart';
+import 'package:app/widgets/app_footer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../support/test_app.dart';
 
 /// Step 1: with all 31 councils the list is long, so it has a visible
 /// scrollbar and a search box (a screen that merely scrolls gave no sign that
@@ -60,7 +63,10 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     container = ProviderContainer.test(
       retry: noAutomaticRetry,
-      overrides: [sharedPreferencesProvider.overrideWithValue(prefs), httpClientProvider.overrideWithValue(MockClient(handle))],
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        httpClientProvider.overrideWithValue(MockClient(handle)),
+      ],
     );
     // The council and area come after the email, so there has to be one.
     container.read(draftNotifierProvider.notifier)
@@ -94,6 +100,32 @@ void main() {
 
     final scrollbar = tester.widget<Scrollbar>(find.byType(Scrollbar));
     expect(scrollbar.thumbVisibility, isTrue);
+  });
+
+  testWidgets('the footer comes after the last council', (tester) async {
+    await openCouncilPicker(tester);
+
+    expect(find.byType(AppFooter), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byType(AppFooter)).dy,
+      greaterThan(tester.getBottomLeft(find.text('Wicklow County Council')).dy),
+    );
+  });
+
+  testWidgets('the footer is there when no council matches the search', (tester) async {
+    await openCouncilPicker(tester);
+
+    await search(tester, 'narnia');
+
+    expect(find.textContaining('No council matches'), findsOneWidget);
+    expect(find.byType(AppFooter), findsOneWidget);
+  });
+
+  testWidgets('the footer is there when the councils cannot be loaded', (tester) async {
+    await openApp(tester, FakeApi()..councilsFail = true, prepare: finishedOwnWordsEmail, path: '/council');
+
+    expect(find.textContaining('Could not load councils'), findsOneWidget);
+    expect(find.byType(AppFooter), findsOneWidget);
   });
 
   testWidgets('typing narrows the list, ignoring case and accents', (tester) async {

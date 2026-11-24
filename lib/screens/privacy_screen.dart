@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_config.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_footer.dart';
 import '../widgets/app_header.dart';
 import '../widgets/content_list.dart';
 
@@ -135,6 +136,8 @@ class PrivacyScreen extends StatelessWidget {
       body: SafeArea(
         child: ContentList(
           verticalPadding: 32,
+          // Without the link to this page.
+          footer: const AppFooter(showPrivacyLink: false),
           children: [
             Text('Privacy notice', style: textTheme.headlineMedium),
             const SizedBox(height: 12),

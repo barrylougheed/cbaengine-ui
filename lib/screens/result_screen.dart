@@ -11,6 +11,7 @@ import '../theme/app_theme.dart';
 import '../utils/counts.dart';
 import '../widgets/app_header.dart';
 import '../widgets/content_width.dart';
+import '../widgets/footer_scroll.dart';
 
 /// Step 6, terminal: renders MessageRecord.status/.detail verbatim
 /// against the backend's exact wording — sent, failed, or partial
@@ -26,12 +27,11 @@ class ResultScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: const AppHeader(),
-      // Centred in the window, in the same reading column as the steps before it.
-      body: Center(
-        child: SingleChildScrollView(
-          child: ContentWidth(
-            child: Padding(padding: const EdgeInsets.symmetric(vertical: 32), child: _body(context, ref, state)),
-          ),
+      // Centred in the space above the footer, in the same reading column as the steps before it.
+      body: FooterScroll(
+        centered: true,
+        child: ContentWidth(
+          child: Padding(padding: const EdgeInsets.symmetric(vertical: 32), child: _body(context, ref, state)),
         ),
       ),
     );

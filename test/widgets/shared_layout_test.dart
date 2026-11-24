@@ -2,6 +2,8 @@ import 'package:app/theme/app_theme.dart';
 import 'package:app/widgets/app_banner.dart';
 import 'package:app/widgets/app_footer.dart';
 import 'package:app/widgets/app_header.dart';
+import 'package:app/widgets/brand_tone.dart';
+import 'package:app/widgets/brand_wordmark.dart';
 import 'package:app/widgets/content_width.dart';
 import 'package:app/widgets/logo_mark.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../support/test_app.dart';
 
-/// The pieces every screen shares: a white header with the olive logo, a
+/// The pieces every screen shares: a white header with the sloth logo, a
 /// content column that does not stretch edge to edge on a wide screen, and a
 /// footer.
 void main() {
@@ -81,13 +83,22 @@ void main() {
   });
 
   group('AppHeader', () {
-    testWidgets('shows the logo mark and the CBAEngine wordmark, and a Privacy link', (tester) async {
+    testWidgets('shows the sloth icon and the CBAEngine name, and no Privacy link', (tester) async {
       await openApp(tester, FakeApi(), path: '/craft');
 
       expect(find.byType(AppHeader), findsOneWidget);
       expect(find.byType(LogoMark), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AppHeader),
+          matching: find.image(const AssetImage('assets/brand/sloth_icon_green.png')),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('CBAEngine'), findsOneWidget);
-      expect(find.descendant(of: find.byType(AppHeader), matching: find.text('Privacy')), findsOneWidget);
+      // The privacy notice is linked from the footer only, never from the top bar.
+      expect(find.descendant(of: find.byType(AppHeader), matching: find.textContaining('Privacy')), findsNothing);
+      expect(find.descendant(of: find.byType(AppHeader), matching: find.byType(TextButton)), findsNothing);
     });
 
     testWidgets('is white with a hairline underneath, not a coloured band', (tester) async {
@@ -99,13 +110,12 @@ void main() {
       expect((decoration.border as Border).bottom.color, AppColors.hairline);
     });
 
-    testWidgets('the Privacy link opens the privacy notice', (tester) async {
-      await openApp(tester, FakeApi(), path: '/craft');
+    testWidgets('has no Privacy link on the home screen either', (tester) async {
+      await openApp(tester, FakeApi());
 
-      await tester.tap(find.descendant(of: find.byType(AppHeader), matching: find.text('Privacy')));
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('Privacy notice'), findsWidgets);
+      expect(find.descendant(of: find.byType(AppHeader), matching: find.textContaining('Privacy')), findsNothing);
+      // ...the footer still carries it.
+      expect(find.text('Privacy notice'), findsOneWidget);
     });
 
     testWidgets('on a wide screen its content sits inside the maximum width, not at the window edges', (tester) async {
@@ -129,13 +139,31 @@ void main() {
   });
 
   group('LogoMark', () {
-    testWidgets('is drawn in the logo olive', (tester) async {
-      await tester.pumpWidget(const MaterialApp(home: Scaffold(body: LogoMark())));
+    Future<void> show(WidgetTester tester, Widget mark) => tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: Center(child: mark)),
+      ),
+    );
 
-      final box = tester.widget<DecoratedBox>(
-        find.descendant(of: find.byType(LogoMark), matching: find.byType(DecoratedBox)),
-      );
-      expect((box.decoration as BoxDecoration).color, AppColors.logoOlive);
+    testWidgets('is the sloth icon in the brand green, as tall as asked', (tester) async {
+      await show(tester, const LogoMark(size: 36));
+
+      expect(find.image(const AssetImage('assets/brand/sloth_icon_green.png')), findsOneWidget);
+      final size = tester.getSize(find.byType(LogoMark));
+      expect(size.height, 36);
+      expect(size.width / size.height, closeTo(416 / 384, 0.02)); // the artwork's shape, not squashed
+    });
+
+    testWidgets('can be the cream one, for a deep olive background', (tester) async {
+      await show(tester, const LogoMark(tone: BrandTone.cream));
+
+      expect(find.image(const AssetImage('assets/brand/sloth_icon_cream.png')), findsOneWidget);
+    });
+
+    testWidgets('is not announced: the name beside it says it', (tester) async {
+      await show(tester, const LogoMark());
+
+      expect(find.descendant(of: find.byType(LogoMark), matching: find.byType(ExcludeSemantics)), findsWidgets);
     });
   });
 
@@ -155,6 +183,51 @@ void main() {
         find.descendant(of: find.byType(AppFooter), matching: find.byType(ColoredBox)).first,
       );
       expect(band.color, AppColors.deepOlive);
+    });
+
+    testWidgets('can leave out the privacy link, for the privacy notice itself', (tester) async {
+      setViewport(tester, 900);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildAppTheme(),
+          home: const Scaffold(body: SingleChildScrollView(child: AppFooter(showPrivacyLink: false))),
+        ),
+      );
+
+      expect(find.text('An independent service, not affiliated with the Government of Ireland.'), findsOneWidget);
+      expect(find.text('Privacy notice'), findsNothing);
+    });
+
+    testWidgets('carries the cream sloth wordmark, which reads on the deep olive', (tester) async {
+      setViewport(tester, 900);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildAppTheme(),
+          home: const Scaffold(body: SingleChildScrollView(child: AppFooter())),
+        ),
+      );
+
+      expect(
+        find.descendant(
+          of: find.byType(AppFooter),
+          matching: find.image(const AssetImage('assets/brand/sloth_wordmark_cream.png')),
+        ),
+        findsOneWidget,
+      );
+      expect(find.image(const AssetImage('assets/brand/sloth_wordmark_green.png')), findsNothing);
+    });
+
+    testWidgets('fits a phone without overflowing', (tester) async {
+      setViewport(tester, 360);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildAppTheme(),
+          home: const Scaffold(body: SingleChildScrollView(child: AppFooter())),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(tester.getRect(find.byType(BrandWordmark)).right, lessThanOrEqualTo(360));
     });
   });
 }

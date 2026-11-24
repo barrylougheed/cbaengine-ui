@@ -1,13 +1,24 @@
-"""Makes the web favicon and app icons (web/favicon.png and web/icons/*.png).
+"""Makes the web favicon and app icons (web/favicon.png and web/icons/*.png)
+from the sloth icon.
 
-    python tool/make_icons.py                 # the placeholder mark, until the logo exists
-    python tool/make_icons.py path/to/logo.png  # from the real logo
+    python tool/make_icons.py                   # from assets/brand/sloth_icon_green.png
+    python tool/make_icons.py path/to/logo.png  # from another logo (see below)
 
-The placeholder is the same mark as lib/widgets/logo_mark.dart: a logo-olive
-disc (#748264) with a white envelope outline. When the real logo is supplied
-(a PNG with a transparent background, at least 512 x 512 pixels and roughly
-square), pass it here and every icon is rebuilt from it; then swap the mark in
-lib/widgets/logo_mark.dart for the same file (see the UI README, "Logo").
+The sloth is drawn in the brand green on a cream tile (#F6F3E9), not on a
+transparent background: a green logo on transparent vanishes on a dark browser
+tab and on a phone's dark home screen, and iOS fills transparent icons with
+black. The tiles are:
+
+    web/favicon.png                  48 x 48, a rounded square (for the browser tab)
+    web/icons/Icon-192.png, -512.png  a full cream square, the sloth filling about
+                                      three quarters of it (also the iOS home screen icon)
+    web/icons/Icon-maskable-*.png     a full cream square with the sloth smaller, inside
+                                      the middle 80% that Android never crops away
+
+The logo passed in must have a transparent background and be at least 256 pixels
+tall; it is cropped to its artwork first, so a logo on a big canvas still fills
+its tile. assets/brand/sloth_icon_green.png is made from the brand folder by
+tool/make_brand_assets.py: run that first if the artwork changes.
 
 Needs Pillow (`pip install pillow`). Run it from the cbaengine-ui folder.
 """
@@ -19,82 +30,55 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-LOGO_OLIVE = (0x74, 0x82, 0x64, 255)  # #748264
-WHITE = (255, 255, 255, 255)
+CREAM = (246, 243, 233, 255)  # #F6F3E9
 SUPERSAMPLE = 4  # draw 4 times larger and shrink, for smooth edges
 
-WEB = Path(__file__).resolve().parent.parent / "web"
+ROOT = Path(__file__).resolve().parent.parent
+WEB = ROOT / "web"
+DEFAULT_LOGO = ROOT / "assets" / "brand" / "sloth_icon_green.png"
 
 
-def placeholder(size: int, *, full_bleed: bool) -> Image.Image:
-    """The placeholder mark at [size] pixels square.
-
-    With [full_bleed] the olive fills the whole square (maskable icons are
-    cropped to a shape by the phone, so the colour must reach the edges) and the
-    envelope is kept inside the middle 60%, which is always visible. Otherwise
-    the olive is a disc on a transparent square.
-    """
-    big = size * SUPERSAMPLE
-    image = Image.new("RGBA", (big, big), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(image)
-
-    if full_bleed:
-        draw.rectangle((0, 0, big, big), fill=LOGO_OLIVE)
-        envelope_width = big * 0.5
-    else:
-        draw.ellipse((0, 0, big - 1, big - 1), fill=LOGO_OLIVE)
-        envelope_width = big * 0.52
-
-    # An envelope outline: a rounded rectangle with a V from the top corners.
-    envelope_height = envelope_width * 0.72
-    left = (big - envelope_width) / 2
-    top = (big - envelope_height) / 2
-    right = left + envelope_width
-    bottom = top + envelope_height
-    stroke = max(2, int(big * 0.045))
-    draw.rounded_rectangle((left, top, right, bottom), radius=big * 0.05, outline=WHITE, width=stroke)
-    middle = (left + right) / 2
-    flap_bottom = top + envelope_height * 0.58
-    draw.line([(left + stroke / 2, top + stroke / 2), (middle, flap_bottom), (right - stroke / 2, top + stroke / 2)],
-              fill=WHITE, width=stroke, joint="curve")
-
-    return image.resize((size, size), Image.LANCZOS)
-
-
-def from_logo(logo: Image.Image, size: int, *, full_bleed: bool) -> Image.Image:
-    """The real logo at [size] pixels square.
-
-    Regular icons: the logo centred on a transparent square, with a little
-    margin. Maskable icons: the logo on white, kept inside the middle 70%.
-    """
+def crop_to_artwork(logo: Image.Image) -> Image.Image:
+    """The logo without its transparent margin."""
     logo = logo.convert("RGBA")
-    scale = 0.7 if full_bleed else 0.9
-    longest = max(logo.size)
-    fitted = logo.resize((round(logo.width * size * scale / longest), round(logo.height * size * scale / longest)), Image.LANCZOS)
-    background = (255, 255, 255, 255) if full_bleed else (0, 0, 0, 0)
-    image = Image.new("RGBA", (size, size), background)
-    image.alpha_composite(fitted, ((size - fitted.width) // 2, (size - fitted.height) // 2))
-    return image
+    box = logo.getchannel("A").point(lambda value: 255 if value > 8 else 0).getbbox()
+    return logo.crop(box) if box else logo
+
+
+def tile(logo: Image.Image, size: int, *, fill: float, rounded: bool) -> Image.Image:
+    """A cream tile `size` pixels square with the logo centred on it, its longest
+    side `fill` of the tile. With `rounded` the corners are rounded (and
+    transparent), as for a favicon; otherwise the cream goes right to the edge."""
+    big = size * SUPERSAMPLE
+    tile_image = Image.new("RGBA", (big, big), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(tile_image)
+    if rounded:
+        draw.rounded_rectangle((0, 0, big - 1, big - 1), radius=big * 0.22, fill=CREAM)
+    else:
+        draw.rectangle((0, 0, big, big), fill=CREAM)
+
+    scale = big * fill / max(logo.size)
+    fitted = logo.resize((round(logo.width * scale), round(logo.height * scale)), Image.LANCZOS)
+    tile_image.alpha_composite(fitted, ((big - fitted.width) // 2, (big - fitted.height) // 2))
+    return tile_image.resize((size, size), Image.LANCZOS)
 
 
 def main() -> int:
-    logo = None
-    if len(sys.argv) > 1:
-        logo = Image.open(sys.argv[1])
-        if min(logo.size) < 512:
-            print(f"The logo is {logo.width} x {logo.height}; it needs to be at least 512 pixels each way.")
-            return 1
-
-    def make(size: int, *, full_bleed: bool) -> Image.Image:
-        return from_logo(logo, size, full_bleed=full_bleed) if logo else placeholder(size, full_bleed=full_bleed)
+    source = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_LOGO
+    if not source.is_file():
+        print(f"Not found: {source}")
+        return 1
+    logo = crop_to_artwork(Image.open(source))
+    if logo.height < 256:
+        print(f"The logo is only {logo.height} pixels tall once cropped; it needs to be at least 256.")
+        return 1
 
     (WEB / "icons").mkdir(parents=True, exist_ok=True)
-    make(48, full_bleed=False).save(WEB / "favicon.png")
+    tile(logo, 48, fill=0.80, rounded=True).save(WEB / "favicon.png")
     for size in (192, 512):
-        make(size, full_bleed=False).save(WEB / "icons" / f"Icon-{size}.png")
-        make(size, full_bleed=True).save(WEB / "icons" / f"Icon-maskable-{size}.png")
-    print("Wrote web/favicon.png and web/icons/Icon-{192,512}.png and Icon-maskable-{192,512}.png "
-          + ("from the logo." if logo else "(placeholder mark)."))
+        tile(logo, size, fill=0.74, rounded=False).save(WEB / "icons" / f"Icon-{size}.png")
+        tile(logo, size, fill=0.56, rounded=False).save(WEB / "icons" / f"Icon-maskable-{size}.png")
+    print(f"Wrote web/favicon.png and web/icons/ from {source.name}.")
     return 0
 
 

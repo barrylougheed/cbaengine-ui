@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-/// One letter style of GET /topics (Formal & Direct, Passionate & Urgent...):
+/// One letter style of GET /topics (Direct, Urgent...):
 /// the tone the resident chooses for the whole email. The server writes each
 /// issue's text in it. Sent in display order; the first is the server's default.
 class StyleSummary extends Equatable {

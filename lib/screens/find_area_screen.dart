@@ -9,9 +9,11 @@ import '../models/place_match.dart';
 import '../providers/draft/draft_notifier.dart';
 import '../providers/reference_data/reference_data_providers.dart';
 import '../utils/counts.dart';
+import '../widgets/app_footer.dart';
 import '../widgets/app_header.dart';
 import '../widgets/content_width.dart';
 import '../widgets/error_banner.dart';
+import '../widgets/footer_scroll.dart';
 import '../widgets/loading_view.dart';
 
 /// "Find your area": for a resident who does not know their council or Local
@@ -71,7 +73,6 @@ class _FindAreaScreenState extends ConsumerState<FindAreaScreen> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
     // The results list spans the window; everything keeps to the reading column.
     final gutter = ContentWidth.gutter(MediaQuery.sizeOf(context).width);
 
@@ -81,7 +82,10 @@ class _FindAreaScreenState extends ConsumerState<FindAreaScreen> {
         children: [
           Padding(
             padding: EdgeInsets.fromLTRB(gutter, 24, gutter, 8),
-            child: Align(alignment: Alignment.centerLeft, child: Text('Find your area', style: textTheme.headlineSmall)),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Find your area', style: textTheme.headlineSmall),
+            ),
           ),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: gutter, vertical: 4),
@@ -103,14 +107,6 @@ class _FindAreaScreenState extends ConsumerState<FindAreaScreen> {
             ),
           ),
           Expanded(child: _results(context)),
-          Padding(
-            padding: EdgeInsets.fromLTRB(gutter, 4, gutter, 12),
-            child: Text(
-              'Place names and area boundaries © Tailte Éireann (CC BY 4.0).',
-              style: textTheme.bodySmall?.copyWith(color: muted),
-              textAlign: TextAlign.center,
-            ),
-          ),
         ],
       ),
     );
@@ -120,14 +116,20 @@ class _FindAreaScreenState extends ConsumerState<FindAreaScreen> {
   /// while the list around it spans the window.
   double _gutter(BuildContext context) => ContentWidth.gutter(MediaQuery.sizeOf(context).width);
 
+  /// What the results area shows, as a scrolling page that ends with the credit
+  /// for the place names and then the footer, whichever state the search is in.
   Widget _results(BuildContext context) {
     if (_query.length < _minLength) {
-      return Padding(
-        padding: EdgeInsets.symmetric(horizontal: _gutter(context), vertical: 24),
-        child: Text(
-          'Type the town, village or suburb where you live, for example Swords, Rathmines or Athlone. '
-          'Just the place name, not your full address.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+      return _page(
+        context,
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: _gutter(context), vertical: 24),
+          child: Text(
+            'Type the town, village or suburb where you live, for example Swords, Rathmines or Athlone. '
+            'Just the place name, not your full address.',
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+          ),
         ),
       );
     }
@@ -135,13 +137,42 @@ class _FindAreaScreenState extends ConsumerState<FindAreaScreen> {
     return ref
         .watch(placeSearchProvider(_query))
         .when(
-          loading: () => const LoadingView(),
-          error: (error, _) => ErrorBanner(
-            message: 'Could not search. Please check your connection and try again.',
-            onRetry: () => ref.invalidate(placeSearchProvider(_query)),
+          loading: () => _page(context, const LoadingView(), centered: true),
+          error: (error, _) => _page(
+            context,
+            ErrorBanner(
+              message: 'Could not search. Please check your connection and try again.',
+              onRetry: () => ref.invalidate(placeSearchProvider(_query)),
+            ),
+            centered: true,
           ),
-          data: (found) => found.results.isEmpty ? _noMatch(context) : _matches(context, found),
+          data: (found) => _page(context, found.results.isEmpty ? _noMatch(context) : _matches(context, found)),
         );
+  }
+
+  /// [content] with the footer after it. The credit the place data needs
+  /// (CC BY 4.0) goes just above the footer, so it is on every state of the page.
+  Widget _page(BuildContext context, Widget content, {bool centered = false}) {
+    return FooterScroll(
+      centered: centered,
+      footer: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(_gutter(context), 4, _gutter(context), 12),
+            child: Text(
+              'Place names and area boundaries © Tailte Éireann (CC BY 4.0).',
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const AppFooter(),
+        ],
+      ),
+      child: content,
+    );
   }
 
   Widget _noMatch(BuildContext context) {
@@ -165,40 +196,46 @@ class _FindAreaScreenState extends ConsumerState<FindAreaScreen> {
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
     final style = Theme.of(context).textTheme.bodySmall?.copyWith(color: muted);
 
-    return ListView(
+    return Padding(
       padding: EdgeInsets.symmetric(horizontal: _gutter(context), vertical: 4),
-      children: [
-        if (found.results.length > 1 && !found.isCutShort)
-          Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('Pick the area your address is in.', style: style)),
-        if (found.isCutShort)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Text(
-              'Showing ${found.results.length} of ${found.total} matches. Type more of the name to narrow it down.',
-              style: style,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (found.results.length > 1 && !found.isCutShort)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text('Pick the area your address is in.', style: style),
             ),
-          ),
-        for (final match in found.results)
-          Card(
-            child: ListTile(
-              title: Text(match.place),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('${match.lea.name}, ${match.lea.council}'),
-                  Text(countOf(match.lea.councillors.length, 'councillor')),
-                  Text(
-                    match.lea.councillors.map((councillor) => councillor.name).join(', '),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+          if (found.isCutShort)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                'Showing ${found.results.length} of ${found.total} matches. Type more of the name to narrow it down.',
+                style: style,
               ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => _choose(match),
             ),
-          ),
-      ],
+          for (final match in found.results)
+            Card(
+              child: ListTile(
+                title: Text(match.place),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('${match.lea.name}, ${match.lea.council}'),
+                    Text(countOf(match.lea.councillors.length, 'councillor')),
+                    Text(
+                      match.lea.councillors.map((councillor) => councillor.name).join(', '),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _choose(match),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

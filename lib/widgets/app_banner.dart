@@ -33,7 +33,7 @@ class AppBanner extends ConsumerWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const LogoMark(),
+            const LogoMark(size: 40),
             const SizedBox(width: 10),
             Flexible(
               child: Text(
@@ -51,8 +51,7 @@ class AppBanner extends ConsumerWidget {
 
   static Future<void> _confirmAndGoHome(BuildContext context, WidgetRef ref) async {
     final draft = ref.read(draftNotifierProvider);
-    final hasProgress =
-        draft.council != null || draft.lea != null || draft.subject.isNotEmpty || draft.body.isNotEmpty;
+    final hasProgress = draft.council != null || draft.lea != null || draft.subject.isNotEmpty || draft.body.isNotEmpty;
 
     // Nothing at stake yet (e.g. tapped from a fresh screen) — skip the
     // nag. Confirming is only meaningful when there's actually something

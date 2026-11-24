@@ -4,6 +4,8 @@ import 'package:app/models/lea.dart';
 import 'package:app/models/message_intent.dart';
 import 'package:app/models/topic_summary.dart';
 import 'package:app/providers/draft/draft_notifier.dart';
+import 'package:app/screens/privacy_screen.dart';
+import 'package:app/widgets/app_footer.dart';
 import 'package:app/widgets/content_width.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,6 +17,9 @@ import '../support/test_app.dart';
 /// and shrinks to the screen with a 16px margin on a phone. This opens each
 /// screen in a very wide and a very narrow window and checks that one
 /// representative piece of its content is where it should be.
+///
+/// Every one of them also ends with the footer (the independence statement and
+/// the way to the privacy notice), as Home does.
 ///
 /// Home has its own, wider layout and is checked in its own tests.
 void main() {
@@ -77,11 +82,10 @@ void main() {
           name: 'Choose a letter style',
           path: '/craft/issues/style',
           // The style screen needs topics chosen (the router sends a visit without any back).
-          prepare: (draft) => draft.setIssues(const [
-            TopicSummary(id: 'homelessness', title: 'Homelessness', category: 'housing'),
-          ]),
+          prepare: (draft) =>
+              draft.setIssues(const [TopicSummary(id: 'homelessness', title: 'Homelessness', category: 'housing')]),
           after: null,
-          content: () => cardWith('Formal & Direct'),
+          content: () => cardWith('Direct'),
         ),
         (
           name: 'Write an issues email',
@@ -179,5 +183,29 @@ void main() {
       expect(rect.right, lessThanOrEqualTo(390));
       expect(tester.takeException(), isNull);
     });
+
+    // The privacy notice does not link to itself.
+    final isPrivacyNotice = screen.path == '/privacy';
+    Finder footerLink() => find.descendant(of: find.byType(AppFooter), matching: find.text('Privacy notice'));
+
+    testWidgets('${screen.name}: ends with the footer', (tester) async {
+      await open(tester, 390);
+
+      expect(find.byType(AppFooter), findsOneWidget);
+      expect(find.text(AppFooter.independence), findsOneWidget);
+      expect(footerLink(), isPrivacyNotice ? findsNothing : findsOneWidget);
+    });
+
+    if (!isPrivacyNotice) {
+      testWidgets('${screen.name}: the footer opens the privacy notice', (tester) async {
+        await open(tester, 390);
+
+        await tester.ensureVisible(footerLink());
+        await tester.tap(footerLink());
+        await tester.pumpAndSettle();
+
+        expect(find.byType(PrivacyScreen), findsOneWidget);
+      });
+    }
   }
 }

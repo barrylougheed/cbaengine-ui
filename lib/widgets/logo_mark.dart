@@ -1,29 +1,31 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_theme.dart';
+import 'brand_tone.dart';
 
-/// The brand mark: an olive disc with a white envelope. It stands in for the
-/// final logo, which is placed here in one spot when it is ready (replace the
-/// body of [build] with an `Image.asset`). It always sits on white, where the
-/// logo olive reads clearly (4.1:1, fine for a graphic).
+/// The brand mark: the sloth icon, a sloth curled into a "C". It sits at the
+/// left of the header, beside the name, and is the one place the mark is drawn
+/// (the favicon and install icons are made from the same artwork by
+/// tool/make_icons.py).
 ///
-/// Decorative: the wordmark beside it carries the name, so screen readers
-/// skip it.
+/// [size] is its height; its width follows the artwork's shape. It is the
+/// brand green by default, for white; ask for [BrandTone.cream] on a deep olive
+/// background.
+///
+/// Decorative: the name beside it says what it is, so screen readers skip it.
 class LogoMark extends StatelessWidget {
-  const LogoMark({super.key, this.size = 32});
+  const LogoMark({super.key, this.size = 32, this.tone = BrandTone.green});
 
   final double size;
+  final BrandTone tone;
 
   @override
   Widget build(BuildContext context) {
     return ExcludeSemantics(
-      child: SizedBox(
-        width: size,
+      child: Image.asset(
+        'assets/brand/sloth_icon_${tone.fileSuffix}.png',
         height: size,
-        child: DecoratedBox(
-          decoration: const BoxDecoration(color: AppColors.logoOlive, shape: BoxShape.circle),
-          child: Icon(Icons.mail_outline, size: size * 0.56, color: AppColors.white),
-        ),
+        // The artwork is shown far smaller than it is stored: smooth, not jagged.
+        filterQuality: FilterQuality.medium,
       ),
     );
   }
